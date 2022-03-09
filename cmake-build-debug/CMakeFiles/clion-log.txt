@@ -1,0 +1,7 @@
+/home/daniel/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/213.6777.58/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/home/daniel/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/213.6777.58/bin/ninja/linux/ninja -G Ninja /home/daniel/Projects/protei_test
+-- Use default c++ compiler 
+-- Not release build, optimization set to -O0
+-- Build static lib
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/daniel/Projects/protei_test/cmake-build-debug
