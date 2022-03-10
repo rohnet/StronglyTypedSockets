@@ -77,7 +77,7 @@ endif ()
 
 
 # Add local files
-file(GLOB_RECURSE BINARY_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
+file(GLOB_RECURSE BINARY_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h ${CMAKE_SOURCE_DIR}/src/*.tpp)
 file(GLOB_RECURSE BINARY_SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 file(GLOB_RECURSE TEST_SOURCES
         ${CMAKE_SOURCE_DIR}/test/*.cpp
