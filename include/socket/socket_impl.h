@@ -1,6 +1,8 @@
 #ifndef PROTEI_TEST_TASK_SOCKET_IMPL_H
 #define PROTEI_TEST_TASK_SOCKET_IMPL_H
 
+#include <socket/shutdown_dir.h>
+
 #include <optional>
 #include <cstdint>
 
@@ -23,7 +25,7 @@ public:
     bool empty() const noexcept;
 
     bool open(int fam, int proto, int flags) noexcept;
-    bool shutdown() noexcept;
+    bool shutdown(shutdown_dir dir) noexcept;
     bool close() noexcept;
     bool bind(in_address_port_t const& local) noexcept;
     bool connect(in_address_port_t const& remote) noexcept;
@@ -35,6 +37,9 @@ public:
     std::optional<std::size_t> receive(void* buffer, std::size_t n, int flags) noexcept;
     std::optional<std::pair<in_address_port_t, std::size_t>> receive_from(
             void* buffer, std::size_t n, int flags);
+
+    bool eagain() const noexcept;
+    int fd() const noexcept;
 
 private:
     template <typename Addr>

@@ -2,14 +2,19 @@
 #define PROTEI_TEST_TASK_ACTIVE_SOCKET_H
 
 #include <policy/send_recv_policy.h>
-#include <socket_impl.h>
+#include <socket/socket_impl.h>
+#include <socket/get_native_handle.h>
+#include <socket/shutdown_dir.h>
 
 namespace protei::sock
 {
 
 template <typename Proto>
-class active_socket_t : public policies::send_recv_policy<active_socket_t, Proto>
+class active_socket_t :
+        public policies::send_recv_policy<active_socket_t, Proto>,
+        public get_native_handle<active_socket_t<Proto>>
 {
+    friend class get_native_handle<active_socket_t<Proto>>;
     friend class policies::send_recv_policy<active_socket_t, Proto>;
 public:
     active_socket_t(
@@ -25,7 +30,7 @@ public:
     bool accepted() const noexcept;
     std::optional<in_address_port_t> remote() const noexcept;
     std::optional<in_address_port_t> local() const noexcept;
-    bool shutdown() noexcept;
+    bool shutdown(shutdown_dir dir) noexcept;
 
 private:
     impl::socket_impl m_impl;

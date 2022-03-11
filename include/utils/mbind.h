@@ -1,17 +1,12 @@
-#ifndef PROTEI_TEST_TASK_UTILS_H
-#define PROTEI_TEST_TASK_UTILS_H
+#ifndef PROTEI_TEST_TASK_MBIND_H
+#define PROTEI_TEST_TASK_MBIND_H
 
-#include <in_address.h>
+#include <socket/in_address.h>
 
 #include <utility>
 #include <functional>
 #include <optional>
 
-namespace protei::sock
-{
-class in_address_t;
-struct in_address_port_t;
-}
 
 namespace protei::utils
 {
@@ -26,20 +21,6 @@ Res operator|(Res&& result, F&& func) noexcept(noexcept(std::declval<F>()()))
     else
     {
         return std::invoke(std::forward<F>(func));
-    }
-}
-
-template <typename T, typename F>
-auto mbind(std::optional<T>& opt, F&& f)
-    -> decltype(std::invoke(std::forward<F>(f), opt.value()))
-{
-    if (opt)
-    {
-        return std::invoke(std::forward<F>(f), opt.value());
-    }
-    else
-    {
-        return std::nullopt;
     }
 }
 
@@ -73,10 +54,6 @@ auto mbind(std::optional<T>&& opt, F&& f)
     }
 }
 
-
-std::string to_string(sock::in_address_t addr) noexcept;
-std::string to_string(sock::in_address_port_t addr) noexcept;
-
 }
 
-#endif //PROTEI_TEST_TASK_UTILS_H
+#endif //PROTEI_TEST_TASK_MBIND_H

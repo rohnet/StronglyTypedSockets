@@ -1,4 +1,4 @@
-#include <proto.h>
+#include <socket/proto.h>
 
 #include <sys/socket.h>
 

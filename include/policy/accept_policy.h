@@ -1,9 +1,9 @@
 #ifndef PROTEI_TEST_TASK_ACCEPT_POLICY_H
 #define PROTEI_TEST_TASK_ACCEPT_POLICY_H
 
-#include <proto.h>
-#include <in_address.h>
-#include <utils.h>
+#include <socket/proto.h>
+#include <socket/in_address.h>
+#include <utils/mbind.h>
 #include <socket_states/active_socket.h>
 
 #include <type_traits>
@@ -36,7 +36,7 @@ private:
 
 
 template <template <typename> typename D, typename Proto>
-struct accept_policy<D, Proto, is_datagram_t<Proto>>
+struct accept_policy<D, Proto, is_connectionless_t<Proto>>
 {};
 
 }

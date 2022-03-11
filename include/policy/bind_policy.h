@@ -1,8 +1,8 @@
 #ifndef PROTEI_TEST_TASK_BIND_POLICY_H
 #define PROTEI_TEST_TASK_BIND_POLICY_H
 
-#include <proto.h>
-#include <in_address.h>
+#include <socket/proto.h>
+#include <socket/in_address.h>
 #include <socket_states/active_socket.h>
 #include <socket_states/binded_socket.h>
 
@@ -37,7 +37,7 @@ private:
 
 
 template <template <typename> typename D, typename Proto>
-struct bind_policy<D, Proto, is_datagram_t<Proto>>
+struct bind_policy<D, Proto, is_connectionless_t<Proto>>
 {
 public:
     std::optional<active_socket_t<Proto>> bind(in_address_port_t const& local) noexcept
