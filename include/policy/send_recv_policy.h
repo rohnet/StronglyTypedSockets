@@ -34,11 +34,17 @@ private:
         static_assert(std::is_base_of_v<send_recv_policy, D<Proto>>);
         return static_cast<D<Proto>&>(*this);
     }
+
+    D<Proto> const& derived() const noexcept
+    {
+        static_assert(std::is_base_of_v<send_recv_policy, D<Proto>>);
+        return static_cast<D<Proto> const&>(*this);
+    }
 };
 
 
 template <template <typename> typename D, typename Proto>
-struct send_recv_policy<D, Proto, is_datagram_t<Proto>>
+struct send_recv_policy<D, Proto, is_connectionless_t<Proto>>
 {
 public:
     std::optional<std::size_t> send(in_address_port_t remote, void* buffer, std::size_t size, int flags) noexcept
@@ -50,11 +56,22 @@ public:
     {
         return derived().m_impl.receive_from(buffer, size, flags);
     }
+
+    bool eagain() const noexcept
+    {
+        return derived().m_impl.egain();
+    }
 private:
     D<Proto>& derived() noexcept
     {
         static_assert(std::is_base_of_v<send_recv_policy, D<Proto>>);
         return static_cast<D<Proto>&>(*this);
+    }
+
+    D<Proto> const& derived() const noexcept
+    {
+        static_assert(std::is_base_of_v<send_recv_policy, D<Proto>>);
+        return static_cast<D<Proto> const&>(*this);
     }
 };
 

@@ -319,6 +319,12 @@ bool socket_impl::eagain() const noexcept
 }
 
 
+int socket_impl::fd() const noexcept
+{
+    return m_fd.value_or(-1);
+}
+
+
 std::optional<std::pair<socket_impl, in_address_port_t>> socket_impl::accept() const
 {
     if (m_family == ipv4{})

@@ -8,6 +8,7 @@
 #include <socket_states/binded_socket.h>
 #include <socket_states/active_socket.h>
 #include <socket_states/listening_socket.h>
+#include <socket/get_native_handle.h>
 
 namespace protei::sock
 {
@@ -15,7 +16,8 @@ namespace protei::sock
 template <typename Proto>
 class socket_t :
         public policies::connect_policy<socket_t, Proto>,
-        public policies::bind_policy<socket_t, Proto>
+        public policies::bind_policy<socket_t, Proto>,
+        public get_native_handle<socket_t<Proto>>
 {
     friend class policies::connect_policy<socket_t, Proto>;
     friend class policies::bind_policy<socket_t, Proto>;

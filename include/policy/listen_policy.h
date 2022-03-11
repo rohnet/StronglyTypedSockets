@@ -37,7 +37,7 @@ private:
 
 
 template <template <typename> typename D, typename Proto>
-struct listen_policy<D, Proto, is_datagram_t<Proto>>
+struct listen_policy<D, Proto, is_connectionless_t<Proto>>
 {};
 
 }

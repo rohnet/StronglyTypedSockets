@@ -3,12 +3,15 @@
 
 #include <policy/send_recv_policy.h>
 #include <socket/socket_impl.h>
+#include <socket/get_native_handle.h>
 
 namespace protei::sock
 {
 
 template <typename Proto>
-class active_socket_t : public policies::send_recv_policy<active_socket_t, Proto>
+class active_socket_t :
+        public policies::send_recv_policy<active_socket_t, Proto>,
+        public get_native_handle<active_socket_t<Proto>>
 {
     friend class policies::send_recv_policy<active_socket_t, Proto>;
 public:

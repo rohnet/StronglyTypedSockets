@@ -37,7 +37,7 @@ private:
 
 
 template <template <typename> typename D, typename Proto>
-struct bind_policy<D, Proto, is_datagram_t<Proto>>
+struct bind_policy<D, Proto, is_connectionless_t<Proto>>
 {
 public:
     std::optional<active_socket_t<Proto>> bind(in_address_port_t const& local) noexcept

@@ -36,7 +36,7 @@ private:
 
 
 template <template <typename> typename D, typename Proto>
-struct accept_policy<D, Proto, is_datagram_t<Proto>>
+struct accept_policy<D, Proto, is_connectionless_t<Proto>>
 {};
 
 }
