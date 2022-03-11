@@ -2,7 +2,7 @@
 #define PROTEI_TEST_TASK_ACTIVE_SOCKET_H
 
 #include <policy/send_recv_policy.h>
-#include <socket_impl.h>
+#include <socket/socket_impl.h>
 
 namespace protei::sock
 {

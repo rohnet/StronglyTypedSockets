@@ -5,9 +5,9 @@
 #include <policy/accept_policy.h>
 #include <policy/connect_policy.h>
 #include <policy/bind_policy.h>
-#include "socket_states/binded_socket.h"
-#include "socket_states/active_socket.h"
-#include "socket_states/listening_socket.h"
+#include <socket_states/binded_socket.h>
+#include <socket_states/active_socket.h>
+#include <socket_states/listening_socket.h>
 
 namespace protei::sock
 {
@@ -39,6 +39,6 @@ private:
 
 }
 
-#include "../src/socket.tpp"
+#include "../../src/socket/socket.tpp"
 
 #endif //PROTEI_TEST_TASK_SOCKET_H

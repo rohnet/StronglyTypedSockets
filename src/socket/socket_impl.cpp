@@ -1,6 +1,6 @@
-#include <socket_impl.h>
-#include <in_address.h>
-#include <af_inet.h>
+#include <socket/socket_impl.h>
+#include <socket/in_address.h>
+#include <socket/af_inet.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>

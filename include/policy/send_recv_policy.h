@@ -1,8 +1,8 @@
 #ifndef PROTEI_TEST_TASK_SEND_RECV_POLICY_H
 #define PROTEI_TEST_TASK_SEND_RECV_POLICY_H
 
-#include <proto.h>
-#include <in_address.h>
+#include <socket/proto.h>
+#include <socket/in_address.h>
 
 #include <type_traits>
 
@@ -22,6 +22,12 @@ public:
     {
         return derived().m_impl.receive(buffer, size, flags);
     }
+
+    bool eagain() const noexcept
+    {
+        return derived().m_impl.egain();
+    }
+
 private:
     D<Proto>& derived() noexcept
     {

@@ -1,6 +1,6 @@
-#include <in_address.h>
-#include <utils.h>
-#include <af_inet.h>
+#include <socket/in_address.h>
+#include <utils/to_string.h>
+#include <socket/af_inet.h>
 
 #include <gtest/gtest.h>
 

@@ -2,7 +2,7 @@
 #define PROTEI_TEST_TASK_LISTENING_SOCKET_H
 
 #include <policy/accept_policy.h>
-#include <socket_impl.h>
+#include <socket/socket_impl.h>
 
 namespace protei::sock
 {

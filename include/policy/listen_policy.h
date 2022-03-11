@@ -1,8 +1,8 @@
 #ifndef PROTEI_TEST_TASK_LISTEN_POLICY_H
 #define PROTEI_TEST_TASK_LISTEN_POLICY_H
 
-#include <proto.h>
-#include <in_address.h>
+#include <socket/proto.h>
+#include <socket/in_address.h>
 #include <socket_states/listening_socket.h>
 
 #include <type_traits>
