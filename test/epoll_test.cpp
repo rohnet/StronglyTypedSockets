@@ -40,9 +40,9 @@ void test_accept()
     ASSERT_TRUE(epoll.add_socket(sock4_connected->native_handle(), sock_op::READ));
     auto events = epoll.proceed(std::chrono::milliseconds{50});
     ASSERT_TRUE(!events.empty());
-    EXPECT_NE(find_if(events.begin(), events.end(), [&](event e)
+    EXPECT_NE(find_if(events.begin(), events.end(), [&](poll_event::event e)
             {
-                return e.type == event_type::READ_READY && serv->native_handle() == e.fd;
+                return e.type == poll_event::event_type::READ_READY && serv->native_handle() == e.fd;
             })
             , events.end());
     auto accepted = serv->accept();
@@ -53,9 +53,9 @@ void test_accept()
     EXPECT_EQ(sent.value(), hello.length());
     events = epoll.proceed(std::chrono::milliseconds{50});
     ASSERT_TRUE(!events.empty());
-    EXPECT_NE(find_if(events.begin(), events.end(), [&](event e)
+    EXPECT_NE(find_if(events.begin(), events.end(), [&](poll_event::event e)
     {
-        return e.type == event_type::READ_READY && accepted->native_handle() == e.fd;
+        return e.type == poll_event::event_type::READ_READY && accepted->native_handle() == e.fd;
     })
     , events.end());
 }

@@ -1,7 +1,7 @@
 #ifndef PROTEI_TEST_TASK_SOCK_OP_H
 #define PROTEI_TEST_TASK_SOCK_OP_H
 
-namespace protei::epoll
+namespace protei::sock
 {
 
 enum class sock_op
