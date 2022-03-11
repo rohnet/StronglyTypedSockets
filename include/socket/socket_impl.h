@@ -36,6 +36,8 @@ public:
     std::optional<std::pair<in_address_port_t, std::size_t>> receive_from(
             void* buffer, std::size_t n, int flags);
 
+    bool eagain() const noexcept;
+
 private:
     template <typename Addr>
     bool bind(Addr const&) noexcept;

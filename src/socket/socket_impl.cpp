@@ -313,6 +313,12 @@ socket_impl& socket_impl::operator=(socket_impl&& other) noexcept
 }
 
 
+bool socket_impl::eagain() const noexcept
+{
+    return errno == EAGAIN;
+}
+
+
 std::optional<std::pair<socket_impl, in_address_port_t>> socket_impl::accept() const
 {
     if (m_family == ipv4{})
