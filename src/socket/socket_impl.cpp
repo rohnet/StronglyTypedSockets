@@ -151,9 +151,19 @@ bool socket_impl::open(int fam, int proto, int flags) noexcept
 }
 
 
-bool socket_impl::shutdown() noexcept
+bool socket_impl::shutdown(shutdown_dir dir) noexcept
 {
-    return !m_fd || 0 == ::shutdown(*m_fd, SHUT_RDWR);
+    int macro_dir = SHUT_RDWR;
+    if (dir == shutdown_dir::WRITE)
+    {
+        macro_dir = SHUT_WR;
+    }
+    else if (dir == shutdown_dir::READ)
+    {
+        macro_dir = SHUT_RD;
+    }
+
+    return !m_fd || 0 == ::shutdown(*m_fd, macro_dir);
 }
 
 
@@ -205,7 +215,17 @@ bool socket_impl::listen(unsigned max_conn) noexcept
 
 std::optional<std::size_t> socket_impl::send(void* buffer, std::size_t n, int flags) noexcept
 {
-    return m_fd ? ::send(*m_fd, buffer, n, flags) : -1;
+    std::optional<std::size_t> ret;
+    if (m_fd)
+    {
+        auto sent = ::send(*m_fd, buffer, n, flags);
+        if (sent != -1)
+        {
+            ret = sent;
+        }
+    }
+
+    return ret;
 }
 
 
@@ -225,13 +245,30 @@ std::optional<std::size_t> socket_impl::send_to(
         }
     }
 
-    return ret;
+    if (ret == static_cast<std::size_t>(-1))
+    {
+        return std::nullopt;
+    }
+    else
+    {
+        return ret;
+    }
 }
 
 
 std::optional<std::size_t> socket_impl::receive(void* buffer, std::size_t n, int flags) noexcept
 {
-    return m_fd ? ::recv(*m_fd, buffer, n, flags) : -1;
+    std::optional<std::size_t> ret;
+    if (m_fd)
+    {
+        auto received = ::recv(*m_fd, buffer, n, flags);
+        if (received != -1)
+        {
+            ret = received;
+        }
+    }
+
+    return ret;
 }
 
 

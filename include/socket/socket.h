@@ -19,6 +19,7 @@ class socket_t :
         public policies::bind_policy<socket_t, Proto>,
         public get_native_handle<socket_t<Proto>>
 {
+    friend class get_native_handle<socket_t<Proto>>;
     friend class policies::connect_policy<socket_t, Proto>;
     friend class policies::bind_policy<socket_t, Proto>;
 public:

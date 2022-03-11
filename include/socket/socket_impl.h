@@ -1,6 +1,8 @@
 #ifndef PROTEI_TEST_TASK_SOCKET_IMPL_H
 #define PROTEI_TEST_TASK_SOCKET_IMPL_H
 
+#include <socket/shutdown_dir.h>
+
 #include <optional>
 #include <cstdint>
 
@@ -23,7 +25,7 @@ public:
     bool empty() const noexcept;
 
     bool open(int fam, int proto, int flags) noexcept;
-    bool shutdown() noexcept;
+    bool shutdown(shutdown_dir dir) noexcept;
     bool close() noexcept;
     bool bind(in_address_port_t const& local) noexcept;
     bool connect(in_address_port_t const& remote) noexcept;

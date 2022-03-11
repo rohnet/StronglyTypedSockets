@@ -16,6 +16,7 @@ class binded_socket_t :
         public policies::connect_policy<binded_socket_t, Proto>,
         public get_native_handle<binded_socket_t<Proto>>
 {
+    friend class get_native_handle<binded_socket_t<Proto>>;
     friend class policies::listen_policy<binded_socket_t, Proto>;
     friend class policies::connect_policy<binded_socket_t, Proto>;
 public:

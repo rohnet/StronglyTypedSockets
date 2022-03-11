@@ -26,21 +26,6 @@ Res operator|(Res&& result, F&& func) noexcept(noexcept(std::declval<F>()()))
 
 
 template <typename T, typename F>
-auto mbind(std::optional<T>& opt, F&& f)
-    -> decltype(std::invoke(std::forward<F>(f), opt.value()))
-{
-    if (opt)
-    {
-        return std::invoke(std::forward<F>(f), opt.value());
-    }
-    else
-    {
-        return std::nullopt;
-    }
-}
-
-
-template <typename T, typename F>
 auto mbind(std::optional<T> const& opt, F&& f)
     -> decltype(std::invoke(std::forward<F>(f), opt.value()))
 {

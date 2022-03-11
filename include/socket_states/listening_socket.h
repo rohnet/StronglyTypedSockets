@@ -13,6 +13,7 @@ class listening_socket_t :
         public policies::accept_policy<listening_socket_t, Proto>,
         public get_native_handle<listening_socket_t<Proto>>
 {
+    friend class get_native_handle<listening_socket_t<Proto>>;
     friend class policies::accept_policy<listening_socket_t, Proto>;
 public:
     listening_socket_t(unsigned max_conn, in_address_port_t local, impl::socket_impl&& impl) noexcept;

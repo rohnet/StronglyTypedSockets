@@ -40,8 +40,7 @@ void test_connect()
     auto sock4 = socket_t<tcp>::create(ipv4{});
     auto sock4_serv = socket_t<tcp>::create(ipv4{});
     ASSERT_TRUE(sock4.has_value() && sock4_serv.has_value());
-
-    unsigned serv_port = 9090;
+    unsigned serv_port = 8032;
     in_address_port_t serv_addr{*in_address_t::create("127.0.0.1"), serv_port};
     auto serv = mbind(sock4_serv->bind(serv_addr), [](binded_socket_t<tcp> sock) { return sock.listen(5); });;
     ASSERT_TRUE(serv.has_value());
@@ -58,19 +57,19 @@ void test_connect()
 
     ASSERT_TRUE(accepted.has_value());
     std::string recv;
-    do
+    while (!accepted->eagain())
     {
         std::string part_recv{5, '\0'};
         auto rec = accepted->receive(part_recv.data(), part_recv.length(), 0);
         if (rec) recv += part_recv.substr(0, *rec);
-    } while (recv != hello);
+    }
     EXPECT_EQ(recv, hello);
     ASSERT_TRUE(sock4_connected.has_value());
     ASSERT_TRUE(accepted->accepted());
     ASSERT_EQ(to_string(accepted->remote().value().addr), "127.0.0.1");
     ASSERT_EQ(to_string(accepted->local().value().addr), "127.0.0.1");
     ASSERT_EQ(accepted->local().value().port, serv_port);
-    EXPECT_TRUE(accepted->shutdown());
+    EXPECT_TRUE(accepted->shutdown(shutdown_dir::BOTH));
 }
 
 

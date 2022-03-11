@@ -25,7 +25,7 @@ public:
 
     bool eagain() const noexcept
     {
-        return derived().m_impl.egain();
+        return derived().m_impl.eagain();
     }
 
 private:

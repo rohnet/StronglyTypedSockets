@@ -150,9 +150,9 @@ std::optional<in_address_port_t> active_socket_t<Proto>::local() const noexcept
 
 
 template <typename Proto>
-bool protei::sock::active_socket_t<Proto>::shutdown() noexcept
+bool protei::sock::active_socket_t<Proto>::shutdown(shutdown_dir dir) noexcept
 {
-    return m_impl.empty() || m_impl.shutdown();
+    return m_impl.empty() || m_impl.shutdown(dir);
 }
 
 }
