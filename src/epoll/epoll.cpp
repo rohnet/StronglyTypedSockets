@@ -1,5 +1,5 @@
 #include <epoll/epoll.h>
-#include <epoll/event.h>
+#include <poll_event/event.h>
 #include <utils/enum_op.h>
 
 #include <sys/epoll.h>
@@ -25,7 +25,23 @@ epoll_t::epoll_t(int queue_size, unsigned max_events)
 }
 
 
-std::optional<epoll_t> epoll_t::create(int queue_size, unsigned max_events) noexcept
+epoll_t::epoll_t(epoll_t&& other) noexcept
+{
+    exchange(std::move(other));
+}
+
+
+epoll_t& epoll_t::operator=(epoll_t&& other) noexcept
+{
+    if (this != &other)
+    {
+        exchange(std::move(other));
+    }
+    return *this;
+}
+
+
+std::optional<epoll::epoll_t> epoll_t::create(int queue_size, unsigned max_events) noexcept
 {
     if (auto fd = epoll_create(queue_size); fd != -1)
     {
@@ -41,24 +57,24 @@ std::optional<epoll_t> epoll_t::create(int queue_size, unsigned max_events) noex
 }
 
 
-bool epoll_t::add_socket(int sock_fd, sock_op op) noexcept
+bool epoll_t::add_socket(int sock_fd, sock::sock_op op) noexcept
 {
     return epoll_ctl(sock_fd, EPOLL_CTL_ADD, op);
 }
 
 
-std::uint_fast32_t epoll_t::flags_from_op(sock_op op) noexcept
+std::uint_fast32_t epoll_t::flags_from_op(sock::sock_op op) noexcept
 {
     std::uint_fast32_t flags = EPOLLRDHUP | EPOLLET | EPOLLPRI | EPOLLERR | EPOLLHUP;
     switch (op)
     {
-        case sock_op::READ:
+        case sock::sock_op::READ:
             flags |= EPOLLIN;
             break;
-        case sock_op::WRITE:
+        case sock::sock_op::WRITE:
             flags |= EPOLLOUT;
             break;
-        case sock_op::READ_WRITE:
+        case sock::sock_op::READ_WRITE:
             flags |= EPOLLOUT | EPOLLIN;
             break;
         default:
@@ -69,13 +85,13 @@ std::uint_fast32_t epoll_t::flags_from_op(sock_op op) noexcept
 }
 
 
-bool epoll_t::mod_socket(int sock_fd, sock_op op) noexcept
+bool epoll_t::mod_socket(int sock_fd, sock::sock_op op) noexcept
 {
     return epoll_ctl(sock_fd, EPOLL_CTL_MOD, op);
 }
 
 
-bool epoll_t::epoll_ctl(int sock_fd, int ctl_op, std::optional<sock_op> op) noexcept
+bool epoll_t::epoll_ctl(int sock_fd, int ctl_op, std::optional<sock::sock_op> op) noexcept
 {
     std::uint_fast32_t flags;
     epoll_event event{}, * event_ptr = nullptr;
@@ -97,7 +113,7 @@ bool epoll_t::del_socket(int sock_fd) noexcept
 }
 
 
-std::vector<event> epoll_t::proceed(std::chrono::milliseconds timeout) noexcept
+std::vector<poll_event::event> epoll_t::proceed(std::chrono::milliseconds timeout) noexcept
 {
     static thread_local std::vector<epoll_event> events(m_max_events);
     auto events_cnt = epoll_wait(
@@ -106,7 +122,7 @@ std::vector<event> epoll_t::proceed(std::chrono::milliseconds timeout) noexcept
             , static_cast<int>(m_max_events)
             , static_cast<int>(timeout.count()));
 
-    std::vector<event> ret_events;
+    std::vector<poll_event::event> ret_events;
     if (events_cnt > 0)
     {
         std::transform(
@@ -115,7 +131,7 @@ std::vector<event> epoll_t::proceed(std::chrono::milliseconds timeout) noexcept
                 , std::back_inserter(ret_events)
                 , [](epoll_event const& epoll_event) noexcept
                 {
-                    return event{epoll_event.data.fd, event_type_from_flags(epoll_event.events)};
+                    return poll_event::event{epoll_event.data.fd, event_type_from_flags(epoll_event.events)};
                 });
     }
 
@@ -123,9 +139,10 @@ std::vector<event> epoll_t::proceed(std::chrono::milliseconds timeout) noexcept
 }
 
 
-event_type epoll_t::event_type_from_flags(std::uint_fast32_t flags) noexcept
+poll_event::event_type epoll_t::event_type_from_flags(std::uint_fast32_t flags) noexcept
 {
     using utils::operator|=;
+    using poll_event::event_type;
     event_type ret = event_type::NONE;
     if (flags & EPOLLIN)
     {
@@ -162,6 +179,14 @@ epoll_t::~epoll_t()
     {
         ::close(m_fd);
     }
+}
+
+
+void epoll_t::exchange(epoll_t&& other) noexcept
+{
+    std::scoped_lock lock(m_mutex, other.m_mutex);
+    m_fd = std::exchange(other.m_fd, -1);
+    m_max_events = std::exchange(other.m_max_events, 0);
 }
 
 }

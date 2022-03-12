@@ -32,7 +32,7 @@ void test_accept()
     ASSERT_TRUE(sock4.has_value() && sock4_serv.has_value());
     unsigned serv_port = 7060;
     in_address_port_t serv_addr{*in_address_t::create("127.0.0.1"), serv_port};
-    auto serv = mbind(sock4_serv->bind(serv_addr), [](binded_socket_t<tcp> sock) { return sock.listen(5); });;
+    auto serv = mbind(sock4_serv->bind(serv_addr), [](binded_socket_t<tcp>&& sock) { return sock.listen(5); });;
     ASSERT_TRUE(serv.has_value());
     epoll_t epoll{5, 10u};
     ASSERT_TRUE(epoll.add_socket(serv->native_handle(), sock_op::READ));
@@ -40,9 +40,9 @@ void test_accept()
     ASSERT_TRUE(epoll.add_socket(sock4_connected->native_handle(), sock_op::READ));
     auto events = epoll.proceed(std::chrono::milliseconds{50});
     ASSERT_TRUE(!events.empty());
-    EXPECT_NE(find_if(events.begin(), events.end(), [&](event e)
+    EXPECT_NE(find_if(events.begin(), events.end(), [&](poll_event::event e)
             {
-                return e.type == event_type::READ_READY && serv->native_handle() == e.fd;
+                return e.type == poll_event::event_type::READ_READY && serv->native_handle() == e.fd;
             })
             , events.end());
     auto accepted = serv->accept();
@@ -53,9 +53,9 @@ void test_accept()
     EXPECT_EQ(sent.value(), hello.length());
     events = epoll.proceed(std::chrono::milliseconds{50});
     ASSERT_TRUE(!events.empty());
-    EXPECT_NE(find_if(events.begin(), events.end(), [&](event e)
+    EXPECT_NE(find_if(events.begin(), events.end(), [&](poll_event::event e)
     {
-        return e.type == event_type::READ_READY && accepted->native_handle() == e.fd;
+        return e.type == poll_event::event_type::READ_READY && accepted->native_handle() == e.fd;
     })
     , events.end());
 }

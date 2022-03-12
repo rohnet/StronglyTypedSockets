@@ -1,7 +1,7 @@
 #ifndef PROTEI_TEST_TASK_EVENT_H
 #define PROTEI_TEST_TASK_EVENT_H
 
-namespace protei::epoll
+namespace protei::poll_event
 {
 
 enum class event_type
