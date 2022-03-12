@@ -262,6 +262,7 @@ std::optional<std::size_t> socket_impl::receive(void* buffer, std::size_t n, int
     if (m_fd)
     {
         auto received = ::recv(*m_fd, buffer, n, flags);
+        auto aa = errno;
         if (received != -1)
         {
             ret = received;

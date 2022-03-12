@@ -4,53 +4,73 @@
 #include <endpoint/send_recv_i.h>
 #include <socket/socket.h>
 
-#include <memory>
-#include <atomic>
-
 namespace protei::endpoint
 {
 
 template <typename Proto>
-class accepted_sock : send_recv_i
+class accepted_sock : public send_recv_i
 {
 public:
-    explicit accepted_sock(sock::active_socket_t<Proto>&& sock) noexcept
+    accepted_sock(std::optional<sock::in_address_port_t> rem, sock::active_socket_t<Proto>&& sock) noexcept
         : m_sock{std::move(sock)}
-        , m_ready{true}
+        , m_remote{rem}
     {}
 
-    bool closed() const noexcept
+    accepted_sock(accepted_sock&& other) noexcept
+        : m_sock{std::move(other.m_sock)}
+        , m_remote{std::move(other.m_remote)}
+    {}
+
+    accepted_sock& operator=(accepted_sock&& other) noexcept
     {
-        return m_sock.unique();
+        if (this != &other)
+        {
+            m_sock = std::move(other.m_sock);
+            m_remote = std::move(other.m_remote);
+        }
+        return *this;
     }
 
-    bool ready_for_read() const noexcept
+
+    int native_handle() const noexcept
     {
-        return m_ready.load(std::memory_order_acquire);
+        return m_sock.native_handle();
     }
 
 private:
-    std::optional<std::size_t> send_impl(void* buffer, std::size_t buff_size) override
+    std::optional<std::size_t> send_impl(void* buffer, std::size_t n) override
     {
-        return m_sock->send(buff_size, buff_size, 0);
+        if constexpr (Proto::is_connectionless)
+        {
+            return m_sock.send(*m_remote, buffer, n, 0);
+        }
+        else
+        {
+            return m_sock.send(buffer, n, 0);
+        }
     }
 
-    std::optional<std::size_t> recv_impl(void* buffer, std::size_t buff_size) override
+    std::optional<std::size_t> recv_impl(void* buffer, std::size_t n) override
     {
-        return m_sock->receive(buff_size, buff_size, 0);
+        if constexpr (Proto::is_connectionless)
+        {
+            return utils::mbind(
+                    m_sock.receive(buffer, n, 0), [](auto&& pair) -> std::optional<std::size_t>
+                    { return pair.second; });
+        }
+        else
+        {
+            return m_sock.receive(buffer, n, 0);
+        }
     }
 
     bool finished_recv_impl() override
     {
-        bool fin = m_sock->eagain();
-        if (fin)
-        {
-            m_ready.store(false, std::memory_order_release);
-        }
+        return m_sock.eagain();
     }
 
     sock::active_socket_t<Proto> m_sock;
-    std::atomic<bool> m_ready;
+    std::optional<sock::in_address_port_t> m_remote;
 };
 
 }

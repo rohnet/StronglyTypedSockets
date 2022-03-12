@@ -32,7 +32,7 @@ void test_accept()
     ASSERT_TRUE(sock4.has_value() && sock4_serv.has_value());
     unsigned serv_port = 7060;
     in_address_port_t serv_addr{*in_address_t::create("127.0.0.1"), serv_port};
-    auto serv = mbind(sock4_serv->bind(serv_addr), [](binded_socket_t<tcp> sock) { return sock.listen(5); });;
+    auto serv = mbind(sock4_serv->bind(serv_addr), [](binded_socket_t<tcp>&& sock) { return sock.listen(5); });;
     ASSERT_TRUE(serv.has_value());
     epoll_t epoll{5, 10u};
     ASSERT_TRUE(epoll.add_socket(serv->native_handle(), sock_op::READ));

@@ -100,7 +100,10 @@ std::pair<bool, std::exception_ptr> event_observer_t<Poll, PollTraits>::handle_e
 template <typename Poll, typename PollTraits>
 void event_observer_t<Poll, PollTraits>::add_exception(std::exception_ptr&& ptr, std::vector<std::exception_ptr>& vec)
 {
-    vec.push_back(std::move(ptr));
+    if (ptr)
+    {
+        vec.push_back(std::move(ptr));
+    }
 }
 
 }

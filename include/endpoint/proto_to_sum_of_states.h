@@ -16,7 +16,7 @@ template <typename Proto, typename = void>
 struct sum_of_states
 {
     using type = std::variant<
-            sock::socket_t<Proto>
+            std::optional<sock::socket_t<Proto>>
             , sock::binded_socket_t<Proto>
             , sock::listening_socket_t<Proto>
             , sock::active_socket_t<Proto>>;
@@ -27,7 +27,7 @@ template <typename Proto>
 struct sum_of_states<Proto, sock::is_connectionless_t<Proto>>
 {
     using type = std::variant<
-            sock::socket_t<Proto>
+            std::optional<sock::socket_t<Proto>>
             , sock::binded_socket_t<Proto>
             , sock::active_socket_t<Proto>>;
 };

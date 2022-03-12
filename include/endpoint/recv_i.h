@@ -10,7 +10,7 @@ namespace protei::endpoint
 class recv_i
 {
 public:
-    virtual ~recv_i() = 0;
+    virtual ~recv_i() = default;
     std::optional<std::size_t> recv(void* buffer, std::size_t buff_size);
     bool finished_recv();
 private:

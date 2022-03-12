@@ -2,6 +2,7 @@
 #define PROTEI_TEST_TASK_EVENT_OBSERVER_H
 
 #include <endpoint/poll_traits.h>
+#include <endpoint/proceed_exception.h>
 
 #include <map>
 #include <functional>

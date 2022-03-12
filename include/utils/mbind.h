@@ -26,27 +26,12 @@ Res operator|(Res&& result, F&& func) noexcept(noexcept(std::declval<F>()()))
 
 
 template <typename T, typename F>
-auto mbind(std::optional<T> const& opt, F&& f)
-    -> decltype(std::invoke(std::forward<F>(f), opt.value()))
+auto mbind(std::optional<T> opt, F&& f)
+    -> decltype(std::invoke(std::forward<F>(f), std::move(*opt)))
 {
     if (opt)
     {
-        return std::invoke(std::forward<F>(f), opt.value());
-    }
-    else
-    {
-        return std::nullopt;
-    }
-}
-
-
-template <typename T, typename F>
-auto mbind(std::optional<T>&& opt, F&& f)
-    -> decltype(std::invoke(std::forward<F>(f), std::move(opt.value())))
-{
-    if (opt)
-    {
-        return std::invoke(std::forward<F>(f), std::move(opt.value()));
+        return std::invoke(std::forward<F>(f), std::move(*opt));
     }
     else
     {
@@ -56,27 +41,12 @@ auto mbind(std::optional<T>&& opt, F&& f)
 
 
 template <typename T, typename F0, typename... F1TON>
-auto mbind(std::optional<T>&& opt, F0&& f0, F1TON&& ...fs)
-        -> decltype(std::invoke(std::forward<F0>(f0), std::move(opt.value())))
+auto mbind(std::optional<T> opt, F0&& f0, F1TON&& ...fs)
+    -> decltype(mbind(std::invoke(std::forward<F0>(f0), std::move(*opt)), std::forward<F1TON>(fs)...))
 {
     if (opt)
     {
-        return mbind(std::invoke(f0, std::move(*opt)), std::forward<F1TON>(fs)...);
-    }
-    else
-    {
-        return std::nullopt;
-    }
-}
-
-
-template <typename T, typename F0, typename... F1TON>
-auto mbind(std::optional<T> const& opt, F0&& f0, F1TON&& ...fs)
-        -> decltype(std::invoke(std::forward<F0>(f0), opt.value()))
-{
-    if (opt)
-    {
-        return mbind(std::invoke(f0, *opt), std::forward<F1TON>(fs)...);
+        return mbind(std::invoke(std::forward<F0>(f0), std::move(*opt)), std::forward<F1TON>(fs)...);
     }
     else
     {

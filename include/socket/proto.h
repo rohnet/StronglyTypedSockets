@@ -31,7 +31,7 @@ struct has_flags<Proto, std::void_t<decltype(Proto::flags)>> : std::true_type
 
 
 template <typename T>
-using is_connectionless_t = std::void_t<decltype(std::declval<char[T::is_datagram]>())>;
+using is_connectionless_t = std::void_t<decltype(std::declval<char[T::is_connectionless]>())>;
 
 template <typename T>
 inline constexpr bool has_flags_v = has_flags<T>::value;

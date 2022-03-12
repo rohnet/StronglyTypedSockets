@@ -42,25 +42,25 @@ struct poll_traits
 template <typename Poll>
 struct poll_traits<std::unique_ptr<Poll>>
 {
-    static std::vector<poll_event::event> proceed(Poll& poll, std::chrono::milliseconds timeout)
+    static std::vector<poll_event::event> proceed(std::unique_ptr<Poll>& poll, std::chrono::milliseconds timeout)
             noexcept(noexcept(poll_traits<Poll>::proceed(*poll, timeout)))
     {
         return poll_traits<Poll>::proceed(*poll, timeout);
     }
 
-    static bool add_socket(Poll& poll, int sock_fd, sock::sock_op op)
+    static bool add_socket(std::unique_ptr<Poll>& poll, int sock_fd, sock::sock_op op)
             noexcept(noexcept(poll_traits<Poll>::add_socket(*poll, sock_fd, op)))
     {
         return poll_traits<Poll>::add_socket(*poll, sock_fd, op);
     }
 
-    static bool mod_socket(Poll& poll, int sock_fd, sock::sock_op op)
+    static bool mod_socket(std::unique_ptr<Poll>& poll, int sock_fd, sock::sock_op op)
             noexcept(noexcept(poll_traits<Poll>::mod_socket(*poll, sock_fd, op)))
     {
         return poll_traits<Poll>::mod_socket(*poll, sock_fd, op);
     }
 
-    static bool del_socket(Poll& poll, int sock_fd)
+    static bool del_socket(std::unique_ptr<Poll>& poll, int sock_fd)
             noexcept(noexcept(poll_traits<Poll>::del_socket(*poll, sock_fd)))
     {
         return poll_traits<Poll>::del_socket(*poll, sock_fd);
@@ -71,25 +71,25 @@ struct poll_traits<std::unique_ptr<Poll>>
 template <typename Poll>
 struct poll_traits<std::shared_ptr<Poll>>
 {
-    static std::vector<poll_event::event> proceed(Poll& poll, std::chrono::milliseconds timeout)
+    static std::vector<poll_event::event> proceed(std::shared_ptr<Poll>& poll, std::chrono::milliseconds timeout)
             noexcept(noexcept(poll_traits<Poll>::proceed(*poll, timeout)))
     {
         return poll_traits<Poll>::proceed(*poll, timeout);
     }
 
-    static bool add_socket(Poll& poll, int sock_fd, sock::sock_op op)
+    static bool add_socket(std::shared_ptr<Poll>& poll, int sock_fd, sock::sock_op op)
             noexcept(noexcept(poll_traits<Poll>::add_socket(*poll, sock_fd, op)))
     {
         return poll_traits<Poll>::add_socket(*poll, sock_fd, op);
     }
 
-    static bool mod_socket(Poll& poll, int sock_fd, sock::sock_op op)
+    static bool mod_socket(std::shared_ptr<Poll>& poll, int sock_fd, sock::sock_op op)
             noexcept(noexcept(poll_traits<Poll>::mod_socket(*poll, sock_fd, op)))
     {
         return poll_traits<Poll>::mod_socket(*poll, sock_fd, op);
     }
 
-    static bool del_socket(Poll& poll, int sock_fd)
+    static bool del_socket(std::shared_ptr<Poll>& poll, int sock_fd)
             noexcept(noexcept(poll_traits<Poll>::del_socket(*poll, sock_fd)))
     {
         return poll_traits<Poll>::del_socket(*poll, sock_fd);
@@ -100,25 +100,25 @@ struct poll_traits<std::shared_ptr<Poll>>
 template <typename Poll>
 struct poll_traits<Poll*>
 {
-    static std::vector<poll_event::event> proceed(Poll& poll, std::chrono::milliseconds timeout)
+    static std::vector<poll_event::event> proceed(Poll* poll, std::chrono::milliseconds timeout)
             noexcept(noexcept(poll_traits<Poll>::proceed(*poll, timeout)))
     {
         return poll_traits<Poll>::proceed(*poll, timeout);
     }
 
-    static bool add_socket(Poll& poll, int sock_fd, sock::sock_op op)
+    static bool add_socket(Poll* poll, int sock_fd, sock::sock_op op)
             noexcept(noexcept(poll_traits<Poll>::add_socket(*poll, sock_fd, op)))
     {
         return poll_traits<Poll>::add_socket(*poll, sock_fd, op);
     }
 
-    static bool mod_socket(Poll& poll, int sock_fd, sock::sock_op op)
+    static bool mod_socket(Poll* poll, int sock_fd, sock::sock_op op)
             noexcept(noexcept(poll_traits<Poll>::mod_socket(*poll, sock_fd, op)))
     {
         return poll_traits<Poll>::mod_socket(*poll, sock_fd, op);
     }
 
-    static bool del_socket(Poll& poll, int sock_fd)
+    static bool del_socket(Poll* poll, int sock_fd)
             noexcept(noexcept(poll_traits<Poll>::del_socket(*poll, sock_fd)))
     {
         return poll_traits<Poll>::del_socket(*poll, sock_fd);

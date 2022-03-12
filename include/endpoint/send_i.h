@@ -10,7 +10,7 @@ namespace protei::endpoint
 class send_i
 {
 public:
-    virtual ~send_i() = 0;
+    virtual ~send_i() = default;
     std::optional<std::size_t> send(void* buffer, std::size_t buff_size);
 private:
     virtual std::optional<std::size_t> send_impl(void* buffer, std::size_t buff_size) = 0;

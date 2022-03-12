@@ -59,8 +59,9 @@ void test_connect()
     std::string recv;
     while (!accepted->eagain())
     {
-        std::string part_recv{5, '\0'};
-        auto rec = accepted->receive(part_recv.data(), part_recv.length(), 0);
+        std::string part_recv;
+        part_recv.resize(5);
+        auto rec = accepted->receive(part_recv.data(), part_recv.size(), 0);
         if (rec) recv += part_recv.substr(0, *rec);
     }
     EXPECT_EQ(recv, hello);
