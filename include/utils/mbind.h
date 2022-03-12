@@ -54,6 +54,36 @@ auto mbind(std::optional<T>&& opt, F&& f)
     }
 }
 
+
+template <typename T, typename F0, typename... F1TON>
+auto mbind(std::optional<T>&& opt, F0&& f0, F1TON&& ...fs)
+        -> decltype(std::invoke(std::forward<F0>(f0), std::move(opt.value())))
+{
+    if (opt)
+    {
+        return mbind(std::invoke(f0, std::move(*opt)), std::forward<F1TON>(fs)...);
+    }
+    else
+    {
+        return std::nullopt;
+    }
+}
+
+
+template <typename T, typename F0, typename... F1TON>
+auto mbind(std::optional<T> const& opt, F0&& f0, F1TON&& ...fs)
+        -> decltype(std::invoke(std::forward<F0>(f0), opt.value()))
+{
+    if (opt)
+    {
+        return mbind(std::invoke(f0, *opt), std::forward<F1TON>(fs)...);
+    }
+    else
+    {
+        return std::nullopt;
+    }
+}
+
 }
 
 #endif //PROTEI_TEST_TASK_MBIND_H

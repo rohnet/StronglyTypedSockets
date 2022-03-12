@@ -14,8 +14,13 @@ template <typename Poll, typename PollTraits = poll_traits<Poll>>
 class event_observer_t
 {
 public:
-    explicit event_observer_t(Poll poll, std::function<void(std::vector<poll_event::event>)> on_unhandled)
+    using on_unhandled_t = std::function<void(std::vector<poll_event::event>)>;
+
+    explicit event_observer_t(Poll poll, on_unhandled_t on_unhandled)
             noexcept(std::is_nothrow_move_constructible_v<Poll>);
+
+    event_observer_t(event_observer_t const&) = delete;
+    event_observer_t& operator=(event_observer_t const&) = delete;
 
     bool add(poll_event::event_type event, std::function<void(int fd)> const& func);
     bool remote(poll_event::event_type event);
@@ -29,11 +34,11 @@ private:
     std::map<poll_event::event_type, std::function<void(int fd)>> m_handlers;
     mutable std::shared_mutex m_mutex;
     Poll m_poll;
-    std::function<void(std::vector<poll_event::event>)> m_unhandled;
+    on_unhandled_t m_unhandled;
 };
 
 }
 
-#include "../../src/endpoint/endpoint.tpp"
+#include "../../src/endpoint/event_observer.tpp"
 
 #endif //PROTEI_TEST_TASK_EVENT_OBSERVER_H
