@@ -128,3 +128,11 @@ target_link_libraries(Test
         pthread)
 
 add_dependencies(Test googletest googlemock)
+
+add_executable(client app/client_main.cpp)
+target_link_libraries(client Transport pthread)
+target_include_directories(client PUBLIC "./include")
+
+add_executable(server app/server_main.cpp)
+target_link_libraries(server Transport pthread)
+target_include_directories(server PUBLIC "./include")

@@ -2,7 +2,7 @@
 #define PROTEI_TEST_TASK_CLIENT_H
 
 #include <endpoint/endpoint.h>
-#include <endpoint/send_recv_i.h>
+#include <endpoint/client_i.h>
 #include <utils/lambda_visitor.h>
 
 
@@ -10,11 +10,15 @@ namespace protei::endpoint
 {
 
 template <typename Proto, typename Poll, typename PollTraits = poll_traits<Poll>>
-class client_t : private endpoint_t<Proto, Poll, PollTraits>, public send_recv_i
+class client_t : private endpoint_t<Proto, Poll, PollTraits>, public client_i
 {
 public:
     using endpoint_t<Proto, Poll, PollTraits>::endpoint_t;
-    using endpoint_t<Proto, Poll, PollTraits>::proceed;
+
+    bool proceed(std::chrono::milliseconds timeout) override
+    {
+        return endpoint_t<Proto, Poll, PollTraits>::proceed(timeout);
+    }
 
     bool start() noexcept;
     bool start(std::string const& local_address, std::uint_fast16_t local_port) noexcept;
@@ -70,12 +74,25 @@ private:
         }
     }
 
-    bool finished_recv_impl() override
+    bool finished_recv_impl() const override
     {
         auto* sock = std::get_if<sock::active_socket_t<Proto>>(&this->state);
         if (sock)
         {
-            return sock->eagain();
+            return sock->again() || sock->would_block();
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    bool finished_send_impl() const override
+    {
+        auto* sock = std::get_if<sock::active_socket_t<Proto>>(&this->state);
+        if (sock)
+        {
+            return sock->again() || sock->would_block();
         }
         else
         {
@@ -91,7 +108,11 @@ private:
             if (fd == std::visit(this->GET_FD, this->state))
             {
                 PollTraits::del_socket(this->poll, fd);
-                this->m_on_disconnect();
+                if (this->m_on_disconnect)
+                {
+                    this->m_on_disconnect();
+                    this->m_on_disconnect = nullptr;
+                }
             }
         };
         this->add(poll_event::event_type::PEER_CLOSED, erase);
@@ -138,7 +159,7 @@ bool client_t<Proto, Poll, PollTraits>::start() noexcept
 {
     using utils::mbind;
     std::lock_guard lock{m_mutex};
-    return this->state.index() == 0
+    return this->idle()
         && mbind(sock::socket_t<Proto>::create(this->af)
             , [this](sock::socket_t<Proto>&& sock) -> std::optional<bool>
             {
@@ -155,7 +176,7 @@ bool client_t<Proto, Poll, PollTraits>::start(std::string const& local_address, 
 {
     using utils::mbind;
     std::lock_guard lock{m_mutex};
-    if (this->state.index() == 0)
+    if (this->idle())
     {
         auto sock = mbind(
                 sock::socket_t<Proto>::create(this->af)
@@ -201,6 +222,24 @@ bool client_t<Proto, Poll, PollTraits>::connect(
         , std::function<void()> on_read_ready
         , std::function<void()> on_disconnect) noexcept
 {
+    static const auto connect = [&](auto&& sock)
+    {
+        auto parsed = sock::in_address_t::create(remote_address);
+        if (parsed)
+        {
+            if (auto connected = sock.connect({*parsed, remote_port}))
+            {
+                this->m_remote = {*parsed, remote_port};
+                this->m_on_connect = std::move(on_connect);
+                this->m_on_read_ready = std::move(on_read_ready);
+                this->m_on_disconnect = std::move(on_disconnect);
+                this->state = std::move(*connected);
+                return true;
+            }
+        }
+        return false;
+    };
+
     return std::visit(utils::lambda_visitor_t{
                     [&](sock::active_socket_t<Proto>&)
                     {
@@ -215,25 +254,31 @@ bool client_t<Proto, Poll, PollTraits>::connect(
                         return false;
                     }
                     , [](sock::listening_socket_t<Proto>&) { return false; }
-                    , [](std::optional<sock::socket_t<Proto>>&) { return false; }
+                    , [&](std::optional<sock::socket_t<Proto>>& sock)
+                    {
+                        if constexpr (Proto::is_connectionless)
+                        {
+                            return false;
+                        }
+                        else if (sock)
+                        {
+                            return connect(*sock);
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
                     , [&, this](sock::binded_socket_t<Proto>& sock)
                     {
-                        if (auto parsed = sock::in_address_t::create(remote_address))
+                        if constexpr (Proto::is_connectionless)
                         {
-                            if constexpr (!Proto::is_connectionless)
-                            {
-                                if (auto st = sock.connect(*this->m_remote))
-                                {
-                                    this->m_remote = {*parsed, remote_port};
-                                    this->m_on_connect = std::move(on_connect);
-                                    this->m_on_read_ready = std::move(on_read_ready);
-                                    this->m_on_disconnect = std::move(on_disconnect);
-                                    this->state = std::move(*st);
-                                    return true;
-                                }
-                            }
+                            return false;
                         }
-                        return false;
+                        else
+                        {
+                            return connect(sock);
+                        }
                     }}, this->state);
 }
 

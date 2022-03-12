@@ -85,8 +85,8 @@ std::pair<bool, std::exception_ptr> event_observer_t<Poll, PollTraits>::handle_e
     std::pair<bool, std::exception_ptr> ret;
     try
     {
-        ret.first |= handle_event(event, poll_event::event_type::WRITE_READY);
         ret.first |= handle_event(event, poll_event::event_type::READ_READY);
+        ret.first |= handle_event(event, poll_event::event_type::WRITE_READY);
         ret.first |= handle_event(event, poll_event::event_type::EXCEPTION);
         ret.first |= handle_event(event, poll_event::event_type::HANGUP);
         ret.first |= handle_event(event, poll_event::event_type::ERROR);

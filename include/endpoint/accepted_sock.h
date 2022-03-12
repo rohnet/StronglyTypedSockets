@@ -64,9 +64,14 @@ private:
         }
     }
 
-    bool finished_recv_impl() override
+    bool finished_send_impl() const override
     {
-        return m_sock.eagain();
+        return m_sock.would_block() || m_sock.again();
+    }
+
+    bool finished_recv_impl() const override
+    {
+        return m_sock.again() || m_sock.would_block();
     }
 
     sock::active_socket_t<Proto> m_sock;

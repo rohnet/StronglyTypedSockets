@@ -378,4 +378,10 @@ std::optional<std::pair<socket_impl, in_address_port_t>> socket_impl::accept() c
     }
 }
 
+
+bool socket_impl::would_block() const noexcept
+{
+    return errno == EWOULDBLOCK;
+}
+
 }

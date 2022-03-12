@@ -10,7 +10,7 @@ std::optional<std::size_t> recv_i::recv(void* buffer, std::size_t buff_size)
 }
 
 
-bool recv_i::finished_recv()
+bool recv_i::finished_recv() const
 {
     // insert debug ext log here
     return finished_recv_impl();

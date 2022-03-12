@@ -32,6 +32,9 @@ public:
     std::optional<in_address_port_t> local() const noexcept;
     bool shutdown(shutdown_dir dir) noexcept;
 
+    bool again() const noexcept;
+    bool would_block() const noexcept;
+
 private:
     impl::socket_impl m_impl;
     std::optional<in_address_port_t> m_remote;
