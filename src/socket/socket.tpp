@@ -155,4 +155,18 @@ bool protei::sock::active_socket_t<Proto>::shutdown(shutdown_dir dir) noexcept
     return m_impl.empty() || m_impl.shutdown(dir);
 }
 
+
+template <typename Proto>
+bool sock::active_socket_t<Proto>::again() const noexcept
+{
+    return m_impl.eagain();
+}
+
+
+template <typename Proto>
+bool sock::active_socket_t<Proto>::would_block() const noexcept
+{
+    return m_impl.would_block();
+}
+
 }

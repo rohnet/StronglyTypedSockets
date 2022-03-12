@@ -39,6 +39,7 @@ public:
             void* buffer, std::size_t n, int flags);
 
     bool eagain() const noexcept;
+    bool would_block() const noexcept;
     int fd() const noexcept;
 
 private:

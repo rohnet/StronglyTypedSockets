@@ -142,5 +142,4 @@ TEST(client_server, exchangeUdp)
     ASSERT_EQ(*sent, hello.size());
     server.proceed(std::chrono::milliseconds{50});
     client.proceed(std::chrono::milliseconds{50});
-
 }

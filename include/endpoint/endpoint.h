@@ -40,6 +40,8 @@ struct endpoint_t : public poll_holder_t<Poll>, public event_observer_t<Poll*>
     endpoint_t(Poll arg_poll, AF af, typename event_observer_t<Poll*>::on_unhandled_t unhandled = nullptr)
             noexcept(std::is_nothrow_move_constructible_v<Poll>);
 
+    bool idle() const noexcept;
+
     int af;
     sum_of_states_t<Proto> state;
 };
@@ -56,6 +58,12 @@ endpoint_t<Proto, Poll, PollTraits>::endpoint_t(
     , af{static_cast<int>(arg_af)}
     , state{sock::socket_t<Proto>::create(af)}
 {}
+
+template <typename Proto, typename Poll, typename PollTraits>
+bool endpoint_t<Proto, Poll, PollTraits>::idle() const noexcept
+{
+    return this->state.index() == 0;
+}
 
 }
 

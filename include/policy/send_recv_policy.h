@@ -5,6 +5,8 @@
 #include <socket/in_address.h>
 
 #include <type_traits>
+#include "socket_states/active_socket.h"
+
 
 namespace protei::sock::policies
 {
@@ -21,11 +23,6 @@ public:
     std::optional<std::size_t> receive(void* buffer, std::size_t size, int flags) noexcept
     {
         return derived().m_impl.receive(buffer, size, flags);
-    }
-
-    bool eagain() const noexcept
-    {
-        return derived().m_impl.eagain();
     }
 
 private:
@@ -57,10 +54,6 @@ public:
         return derived().m_impl.receive_from(buffer, size, flags);
     }
 
-    bool eagain() const noexcept
-    {
-        return derived().m_impl.eagain();
-    }
 private:
     D<Proto>& derived() noexcept
     {

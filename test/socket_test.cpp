@@ -57,7 +57,7 @@ void test_connect()
 
     ASSERT_TRUE(accepted.has_value());
     std::string recv;
-    while (!accepted->eagain())
+    while (!accepted->again())
     {
         std::string part_recv;
         part_recv.resize(5);

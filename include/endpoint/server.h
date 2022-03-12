@@ -60,12 +60,25 @@ struct interface_proxy<Proto, D, sock::is_connectionless_t<Proto>> : send_recv_i
         }
     }
 
-    bool finished_recv_impl() override
+    bool finished_recv_impl() const override
     {
-        auto* sock = std::get_if<sock::active_socket_t<Proto>>(&static_cast<D&>(*this).state);
+        auto* sock = std::get_if<sock::active_socket_t<Proto>>(&static_cast<D const&>(*this).state);
         if (sock)
         {
-            return sock->eagain();
+            return sock->would_block() || sock->again();
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    bool finished_send_impl() const override
+    {
+        auto* sock = std::get_if<sock::active_socket_t<Proto>>(&static_cast<D const&>(*this).state);
+        if (sock)
+        {
+            return sock->would_block() || sock->again();
         }
         else
         {
@@ -78,12 +91,19 @@ struct interface_proxy<Proto, D, sock::is_connectionless_t<Proto>> : send_recv_i
 
 
 template <typename Proto, typename Poll, typename PollTraits = poll_traits<Poll>>
-class server_t : private endpoint_t<Proto, Poll>, public interface_proxy<Proto, server_t<Proto, Poll, PollTraits>>
+class server_t :
+        private endpoint_t<Proto, Poll>
+        , public interface_proxy<Proto, server_t<Proto, Poll, PollTraits>>
+        , public virtual proceed_i
 {
     friend class interface_proxy<Proto, server_t<Proto, Poll, PollTraits>>;
 public:
     using endpoint_t<Proto, Poll, PollTraits>::endpoint_t;
-    using endpoint_t<Proto, Poll, PollTraits>::proceed;
+
+    bool proceed(std::chrono::milliseconds timeout) override
+    {
+        return endpoint_t<Proto, Poll, PollTraits>::proceed(timeout);
+    }
 
     template <typename T = server_t, std::enable_if_t<!std::is_base_of_v<send_recv_i, T>, int> = 0>
     bool start(
@@ -169,7 +189,7 @@ bool server_t<Proto, Poll, PollTraits>::start(
 {
     using utils::mbind;
     std::lock_guard lock{m_mutex};
-    if (this->state.index() == 0)
+    if (this->idle())
     {
         auto local = mbind(sock::socket_t<Proto>::create(this->af)
                 , [this, &address](sock::socket_t<Proto>&& sock)
@@ -224,7 +244,7 @@ bool server_t<Proto, Poll, PollTraits>::start(
 {
     using utils::mbind;
     std::lock_guard lock{m_mutex};
-    if (this->state.index() == 0)
+    if (this->idle())
     {
         auto local = mbind(sock::socket_t<Proto>::create(this->af)
                 , [this, &address](sock::socket_t<Proto>&& sock)
@@ -238,7 +258,7 @@ bool server_t<Proto, Poll, PollTraits>::start(
                 { return std::get<std::optional<sock::socket_t<Proto>>>(this->state)->bind(addr); }))
         {
             this->register_cbs();
-            PollTraits::add_socket(this->poll, active->native_handle(), sock::sock_op::READ_WRITE);
+            PollTraits::add_socket(this->poll, active->native_handle(), sock::sock_op::READ);
             this->state = std::move(*active);
             this->m_on_read_ready = std::move(on_read_ready);
             this->m_erase_active_socket = [on_close = std::move(on_close)](int) { on_close(); };
