@@ -28,7 +28,6 @@ struct sum_of_states<Proto, sock::is_connectionless_t<Proto>>
 {
     using type = std::variant<
             std::optional<sock::socket_t<Proto>>
-            , sock::binded_socket_t<Proto>
             , sock::active_socket_t<Proto>>;
 };
 

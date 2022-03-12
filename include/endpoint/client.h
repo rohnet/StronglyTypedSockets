@@ -23,6 +23,7 @@ public:
     bool connect(
             std::string const& remote_address
             , std::uint_fast16_t remote_port
+            , std::function<void()> on_connect
             , std::function<void()> on_read_ready
             , std::function<void()> on_disconnect) noexcept;
 
@@ -105,6 +106,14 @@ private:
                 this->m_on_read_ready();
             }
         });
+        this->add(poll_event::event_type::WRITE_READY, [this](int fd)
+        {
+            std::lock_guard lock{m_mutex};
+            if (fd == std::visit(this->GET_FD, this->state))
+            {
+                this->m_on_connect();
+            }
+        });
     }
 
     void unregister_cbs()
@@ -117,6 +126,7 @@ private:
     }
 
     std::optional<sock::in_address_port_t> m_remote;
+    std::function<void()> m_on_connect;
     std::function<void()> m_on_read_ready;
     std::function<void()> m_on_disconnect;
     mutable std::mutex m_mutex;
@@ -133,7 +143,7 @@ bool client_t<Proto, Poll, PollTraits>::start() noexcept
             , [this](sock::socket_t<Proto>&& sock) -> std::optional<bool>
             {
                 this->register_cbs();
-                PollTraits::add_socket(this->poll, sock.native_handle(), sock::sock_op::READ);
+                PollTraits::add_socket(this->poll, sock.native_handle(), sock::sock_op::READ_WRITE);
                 this->state = std::move(sock);
                 return true;
             });
@@ -161,7 +171,7 @@ bool client_t<Proto, Poll, PollTraits>::start(std::string const& local_address, 
         if (sock)
         {
             this->register_cbs();
-            PollTraits::add_socket(this->poll, sock->native_handle(), sock::sock_op::READ);
+            PollTraits::add_socket(this->poll, sock->native_handle(), sock::sock_op::READ_WRITE);
             this->state = std::move(*sock);
             return true;
         }
@@ -187,24 +197,40 @@ template <typename Proto, typename Poll, typename PollTraits>
 bool client_t<Proto, Poll, PollTraits>::connect(
         std::string const& remote_address
         , std::uint_fast16_t remote_port
+        , std::function<void()> on_connect
         , std::function<void()> on_read_ready
         , std::function<void()> on_disconnect) noexcept
 {
     return std::visit(utils::lambda_visitor_t{
-                    [](sock::active_socket_t<Proto>&) { return true; }
+                    [&](sock::active_socket_t<Proto>&)
+                    {
+                        if (auto parsed = sock::in_address_t::create(remote_address))
+                        {
+                            this->m_remote = {*parsed, remote_port};
+                            this->m_on_connect = std::move(on_connect);
+                            this->m_on_read_ready = std::move(on_read_ready);
+                            this->m_on_disconnect = std::move(on_disconnect);
+                            return true;
+                        }
+                        return false;
+                    }
                     , [](sock::listening_socket_t<Proto>&) { return false; }
                     , [](std::optional<sock::socket_t<Proto>>&) { return false; }
                     , [&, this](sock::binded_socket_t<Proto>& sock)
                     {
                         if (auto parsed = sock::in_address_t::create(remote_address))
                         {
-                            this->m_remote = {*parsed, remote_port};
-                            if (auto st = sock.connect(*this->m_remote))
+                            if constexpr (!Proto::is_connectionless)
                             {
-                                this->m_on_read_ready = std::move(on_read_ready);
-                                this->m_on_disconnect = std::move(on_disconnect);
-                                this->state = std::move(*st);
-                                return true;
+                                if (auto st = sock.connect(*this->m_remote))
+                                {
+                                    this->m_remote = {*parsed, remote_port};
+                                    this->m_on_connect = std::move(on_connect);
+                                    this->m_on_read_ready = std::move(on_read_ready);
+                                    this->m_on_disconnect = std::move(on_disconnect);
+                                    this->state = std::move(*st);
+                                    return true;
+                                }
                             }
                         }
                         return false;

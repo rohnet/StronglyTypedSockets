@@ -30,6 +30,7 @@ public:
 private:
     std::exception_ptr handle_unhandled(std::vector<poll_event::event> const& events);
     std::pair<bool, std::exception_ptr> handle_event(poll_event::event event);
+    bool handle_event(poll_event::event event, poll_event::event_type tp);
     void add_exception(std::exception_ptr&& ptr, std::vector<std::exception_ptr>& vec);
 
     std::map<poll_event::event_type, std::function<void(int fd)>> m_handlers;

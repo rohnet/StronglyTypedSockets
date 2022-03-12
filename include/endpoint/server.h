@@ -11,16 +11,16 @@
 
 namespace protei::endpoint
 {
-template <typename Proto, typename = void>
+template <typename Proto, typename D, typename = void>
 struct interface_proxy
 {};
 
-template <typename Proto>
-struct interface_proxy<Proto, sock::is_connectionless_t<Proto>> : send_recv_i
+template <typename Proto, typename D>
+struct interface_proxy<Proto, D, sock::is_connectionless_t<Proto>> : send_recv_i
 {
     std::optional<std::size_t> send_impl(void* buffer, std::size_t n) override
     {
-        auto* sock = std::get_if<sock::active_socket_t<Proto>>(&this->state);
+        auto* sock = std::get_if<sock::active_socket_t<Proto>>(&static_cast<D&>(*this).state);
         if (sock && m_remote)
         {
             if constexpr (Proto::is_connectionless)
@@ -40,7 +40,7 @@ struct interface_proxy<Proto, sock::is_connectionless_t<Proto>> : send_recv_i
 
     std::optional<std::size_t> recv_impl(void* buffer, std::size_t n) override
     {
-        auto* sock = std::get_if<sock::active_socket_t<Proto>>(&this->state);
+        auto* sock = std::get_if<sock::active_socket_t<Proto>>(&static_cast<D&>(*this).state);
         if (sock)
         {
             if constexpr (Proto::is_connectionless)
@@ -62,7 +62,7 @@ struct interface_proxy<Proto, sock::is_connectionless_t<Proto>> : send_recv_i
 
     bool finished_recv_impl() override
     {
-        auto* sock = std::get_if<sock::active_socket_t<Proto>>(&this->state);
+        auto* sock = std::get_if<sock::active_socket_t<Proto>>(&static_cast<D&>(*this).state);
         if (sock)
         {
             return sock->eagain();
@@ -78,8 +78,9 @@ struct interface_proxy<Proto, sock::is_connectionless_t<Proto>> : send_recv_i
 
 
 template <typename Proto, typename Poll, typename PollTraits = poll_traits<Poll>>
-class server_t : private endpoint_t<Proto, Poll>, public interface_proxy<Proto>
+class server_t : private endpoint_t<Proto, Poll>, public interface_proxy<Proto, server_t<Proto, Poll, PollTraits>>
 {
+    friend class interface_proxy<Proto, server_t<Proto, Poll, PollTraits>>;
 public:
     using endpoint_t<Proto, Poll, PollTraits>::endpoint_t;
     using endpoint_t<Proto, Poll, PollTraits>::proceed;
@@ -91,6 +92,16 @@ public:
             , unsigned max_conns
             , std::function<void(accepted_sock<Proto>)> on_conn
             , std::function<void(int fd)> erase_active_socket) noexcept;
+
+    template <typename T = server_t, std::enable_if_t<std::is_base_of_v<send_recv_i, T>, int> = 0>
+    bool start(
+            std::string const& address
+            , std::uint_fast16_t port
+            , std::string const& remote_address
+            , std::uint_fast16_t remote_port
+            , std::function<void()> on_read_ready
+            , std::function<void()> on_close);
+
     void stop() noexcept;
 
 private:
@@ -111,11 +122,18 @@ private:
             std::lock_guard lock{m_mutex};
             if (fd == std::visit(this->GET_FD, this->state))
             {
-                auto accepted = std::get<sock::listening_socket_t<Proto>>(this->state).accept();
-                if (accepted)
+                if constexpr (!Proto::is_connectionless)
                 {
-                    PollTraits::add_socket(this->poll, accepted->native_handle(), sock::sock_op::READ);
-                    this->m_on_conn(accepted_sock{std::nullopt, std::move(*accepted)});
+                    auto accepted = std::get<sock::listening_socket_t<Proto>>(this->state).accept();
+                    if (accepted)
+                    {
+                        PollTraits::add_socket(this->poll, accepted->native_handle(), sock::sock_op::READ);
+                        this->m_on_conn(accepted_sock{std::nullopt, std::move(*accepted)});
+                    }
+                }
+                else
+                {
+                    this->m_on_read_ready();
                 }
             }
         });
@@ -132,6 +150,7 @@ private:
 
     std::function<void(accepted_sock<Proto>)> m_on_conn;
     std::function<void(int fd)> m_erase_active_socket;
+    std::function<void()> m_on_read_ready;
     mutable std::mutex m_mutex;
 };
 
@@ -190,6 +209,48 @@ void server_t<Proto, Poll, PollTraits>::stop() noexcept
     unregister_cbs();
     m_on_conn = nullptr;
     m_erase_active_socket = nullptr;
+}
+
+
+template <typename Proto, typename Poll, typename PollTraits>
+template <typename T, std::enable_if_t<std::is_base_of_v<send_recv_i, T>, int>>
+bool server_t<Proto, Poll, PollTraits>::start(
+        std::string const& address
+        , std::uint_fast16_t port
+        , std::string const& remote_address
+        , std::uint_fast16_t remote_port
+        , std::function<void()> on_read_ready
+        , std::function<void()> on_close)
+{
+    using utils::mbind;
+    std::lock_guard lock{m_mutex};
+    if (this->state.index() == 0)
+    {
+        auto local = mbind(sock::socket_t<Proto>::create(this->af)
+                , [this, &address](sock::socket_t<Proto>&& sock)
+                {
+                    this->state = std::move(sock);
+                    return sock::in_address_t::create(address);
+                }, [port](sock::in_address_t addr) -> std::optional<sock::in_address_port_t>
+                { return sock::in_address_port_t{addr, port}; });
+        if (auto active = mbind(std::optional{local}
+                , [this](sock::in_address_port_t addr)
+                { return std::get<std::optional<sock::socket_t<Proto>>>(this->state)->bind(addr); }))
+        {
+            this->register_cbs();
+            PollTraits::add_socket(this->poll, active->native_handle(), sock::sock_op::READ_WRITE);
+            this->state = std::move(*active);
+            this->m_on_read_ready = std::move(on_read_ready);
+            this->m_erase_active_socket = [on_close = std::move(on_close)](int) { on_close(); };
+            this->m_remote = mbind(
+                    sock::in_address_t::create(remote_address)
+                    , [remote_port](sock::in_address_t addr) -> std::optional<sock::in_address_port_t>
+                    { return sock::in_address_port_t{ addr, remote_port };});
+            return true;
+        }
+    }
+
+    return false;
 }
 
 }

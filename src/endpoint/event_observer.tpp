@@ -1,3 +1,7 @@
+#include <utils/enum_op.h>
+#include "endpoint/event_observer.h"
+
+
 namespace protei::endpoint
 {
 
@@ -81,12 +85,12 @@ std::pair<bool, std::exception_ptr> event_observer_t<Poll, PollTraits>::handle_e
     std::pair<bool, std::exception_ptr> ret;
     try
     {
-        auto fnd = m_handlers.find(event.type);
-        if (fnd != m_handlers.cend())
-        {
-            ret.first = true;
-            fnd->second(event.fd);
-        }
+        ret.first |= handle_event(event, poll_event::event_type::WRITE_READY);
+        ret.first |= handle_event(event, poll_event::event_type::READ_READY);
+        ret.first |= handle_event(event, poll_event::event_type::EXCEPTION);
+        ret.first |= handle_event(event, poll_event::event_type::HANGUP);
+        ret.first |= handle_event(event, poll_event::event_type::ERROR);
+        ret.first |= handle_event(event, poll_event::event_type::PEER_CLOSED);
     }
     catch (...)
     {
@@ -103,6 +107,23 @@ void event_observer_t<Poll, PollTraits>::add_exception(std::exception_ptr&& ptr,
     if (ptr)
     {
         vec.push_back(std::move(ptr));
+    }
+}
+
+
+template <typename Poll, typename PollTraits>
+bool event_observer_t<Poll, PollTraits>::handle_event(poll_event::event event, poll_event::event_type tp)
+{
+    using utils::operator&;
+    auto fnd = m_handlers.find(event.type & tp);
+    if (fnd == m_handlers.cend())
+    {
+        return false;
+    }
+    else
+    {
+        fnd->second(event.fd);
+        return true;
     }
 }
 
