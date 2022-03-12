@@ -59,7 +59,6 @@ endpoint_t<Proto, Poll, PollTraits>::endpoint_t(
     , state{sock::socket_t<Proto>::create(af)}
 {}
 
-
 template <typename Proto, typename Poll, typename PollTraits>
 bool endpoint_t<Proto, Poll, PollTraits>::idle() const noexcept
 {

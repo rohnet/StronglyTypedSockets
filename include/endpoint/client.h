@@ -239,7 +239,6 @@ bool client_t<Proto, Poll, PollTraits>::connect(
         }
         return false;
     };
-
     return std::visit(utils::lambda_visitor_t{
                     [&](sock::active_socket_t<Proto>&)
                     {
