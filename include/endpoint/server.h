@@ -4,6 +4,7 @@
 #include <endpoint/endpoint.h>
 #include <endpoint/accepted_sock.h>
 #include <utils/mbind.h>
+#include <endpoint/proceed_i.h>
 #include <utils/address_from_string.h>
 
 #include <set>
@@ -78,7 +79,7 @@ template <typename Proto, typename Poll, typename PollTraits = poll_traits<Poll>
 class server_t :
         private endpoint_t<sum_of_server_states_t, Proto, Poll>
         , public interface_proxy<Proto, server_t<Proto, Poll, PollTraits>>
-        , public virtual proceed_i
+        , public proceed_i
 {
     friend class interface_proxy<Proto, server_t<Proto, Poll, PollTraits>>;
 public:
