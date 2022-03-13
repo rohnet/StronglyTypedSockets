@@ -72,7 +72,7 @@ struct poll_traits<my_poll_t>
 
 ### Unit-test results
 TODO: add travis CI to repo
-
+```
 [==========] Running 24 tests from 4 test suites.
 [----------] Global test environment set-up.
 [----------] 6 tests from client_server
@@ -138,3 +138,4 @@ TODO: add travis CI to repo
 [----------] Global test environment tear-down
 [==========] 24 tests from 4 test suites ran. (58 ms total)
 [  PASSED  ] 24 tests.
+```
