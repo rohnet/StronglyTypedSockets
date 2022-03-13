@@ -6,10 +6,18 @@
 namespace protei::sock
 {
 
+/**
+ * @brief CRTP get native handle to avoid copy-paste in socket types
+ * @tparam Derived - derived type
+ */
 template <typename Derived>
 struct get_native_handle
 {
 public:
+    /**
+     * @brief Get socket's native handle (file descriptor)
+     * @return file descriptor
+     */
     int native_handle() const noexcept
     {
         return derived().m_impl.fd();

@@ -12,6 +12,10 @@ namespace protei::endpoint
 namespace
 {
 
+/**
+ * @brief Sum of client socket states for connection based protocol
+ * @tparam Proto - protocol type
+ */
 template <typename Proto, typename = void>
 struct sum_of_client_states
 {
@@ -22,6 +26,10 @@ struct sum_of_client_states
 };
 
 
+/**
+ * @brief Sum of server socket states for connection based protocol
+ * @tparam Proto - protocol type
+ */
 template <typename Proto, typename = void>
 struct sum_of_server_states
 {
@@ -32,6 +40,10 @@ struct sum_of_server_states
 };
 
 
+/**
+ * @brief Sum of client socket states for connectionless protocol
+ * @tparam Proto - protocol type
+ */
 template <typename Proto>
 struct sum_of_client_states<Proto, sock::is_connectionless_t<Proto>>
 {
@@ -41,6 +53,10 @@ struct sum_of_client_states<Proto, sock::is_connectionless_t<Proto>>
 };
 
 
+/**
+ * @brief Sum of server socket states for connectionless protocol
+ * @tparam Proto - protocol type
+ */
 template <typename Proto>
 struct sum_of_server_states<Proto, sock::is_connectionless_t<Proto>>
 {

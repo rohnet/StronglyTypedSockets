@@ -10,6 +10,11 @@
 namespace protei::sock::policies
 {
 
+/**
+ * @brief Connect policy for connection based protocols
+ * @tparam D - derived type
+ * @tparam Proto - protocol type
+ */
 template <template <typename> typename D, typename Proto, typename = void>
 struct connect_policy
 {
@@ -46,6 +51,11 @@ private:
 };
 
 
+/**
+ * @brief Connect policy for connectionless protocols
+ * @tparam D - derived type
+ * @tparam Proto - protocol type
+ */
 template <template <typename> typename D, typename Proto>
 struct connect_policy<D, Proto, is_connectionless_t<Proto>>
 {};

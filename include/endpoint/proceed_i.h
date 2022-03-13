@@ -6,6 +6,9 @@
 namespace protei::endpoint
 {
 
+/**
+ * @brief Proceed interface
+ */
 struct proceed_i
 {
     virtual ~proceed_i() = default;

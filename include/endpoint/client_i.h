@@ -7,6 +7,9 @@
 namespace protei::endpoint
 {
 
+/**
+ * @brief Client interface
+ */
 struct client_i : proceed_i, send_recv_i
 {};
 

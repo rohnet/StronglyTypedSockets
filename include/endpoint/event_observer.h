@@ -3,6 +3,7 @@
 
 #include <endpoint/poll_traits.h>
 #include <endpoint/proceed_exception.h>
+#include <utils/enum_op.h>
 
 #include <map>
 #include <functional>
@@ -11,20 +12,48 @@
 namespace protei::endpoint
 {
 
+/**
+ * @brief Poll event observer. Event handler registrar.
+ * @tparam Poll - poll type
+ * @tparam PollTraits - poll static adapter
+ */
 template <typename Poll, typename PollTraits = poll_traits<Poll>>
 class event_observer_t
 {
 public:
     using on_unhandled_t = std::function<void(std::vector<poll_event::event>)>;
 
-    explicit event_observer_t(Poll poll, on_unhandled_t on_unhandled)
+    /**
+     * @brief Ctor
+     * @param poll - poll
+     * @param on_unhandled - callback to be called on unhandled poll events
+     */
+    event_observer_t(Poll poll, on_unhandled_t on_unhandled)
             noexcept(std::is_nothrow_move_constructible_v<Poll>);
 
     event_observer_t(event_observer_t const&) = delete;
     event_observer_t& operator=(event_observer_t const&) = delete;
 
+    /**
+     * @brief Register handler
+     * @param event - handler's event type
+     * @param func - handler
+     * @return true if no handlers for passed event were registered before
+     */
     bool add(poll_event::event_type event, std::function<void(int fd)> const& func);
-    bool remote(poll_event::event_type event);
+
+    /**
+     * @brief Unregister handler from event
+     * @param event - handler's event type
+     * @return true if handler unregistered
+     */
+    bool remove(poll_event::event_type event);
+
+    /**
+     * @brief Proceed events
+     * @param timeout - blocking timeout
+     * @return true if at least one event was proceeded
+     */
     bool proceed(std::chrono::milliseconds timeout);
 
 private:

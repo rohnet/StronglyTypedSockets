@@ -14,6 +14,9 @@ struct in_address_port_t;
 namespace protei::sock::impl
 {
 
+/**
+ * @brief Socket encapsulation
+ */
 class socket_impl
 {
 public:

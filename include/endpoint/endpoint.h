@@ -11,6 +11,10 @@ namespace protei::endpoint
 namespace
 {
 
+/**
+ * @brief Poll holder. Needed to pass pointer to event_observer_t. Avoids unnecessary copying.
+ * @tparam Poll - poll type
+ */
 template <typename Poll>
 struct poll_holder_t
 {
@@ -19,58 +23,45 @@ struct poll_holder_t
 
 }
 
+/**
+ * @brief Base endpoint. Holds socket states, inherited from event observer.
+ * @tparam States - socket states type
+ * @tparam Proto - protocol type
+ * @tparam Poll - poll type
+ * @tparam PollTraits - poll static adapter
+ */
 template <template <typename> typename States, typename Proto, typename Poll, typename PollTraits = poll_traits<Poll>>
 struct endpoint_t : public poll_holder_t<Poll>, public event_observer_t<Poll*>
 {
+    /**
+     * @brief Ctor
+     * @tparam AF - address family type. Must be convertible to int
+     * @param arg_poll - poll instance
+     * @param af - address family
+     * @param unhandled - optional handler for non-handled poll events
+     */
     template <typename AF>
     endpoint_t(Poll arg_poll, AF af, typename event_observer_t<Poll*>::on_unhandled_t unhandled = nullptr)
             noexcept(std::is_nothrow_move_constructible_v<Poll>);
 
+    /**
+     * @brief Checks if endpoint's socket in idle state
+     * @return true if idled
+     */
     bool idle() const noexcept;
+
+    /**
+     * @brief Get socket's file descriptor
+     * @return file descriptor
+     */
     auto get_fd() const noexcept;
 
     int af;
     States<Proto> state;
 };
 
-
-template <template <typename> typename States, typename Proto, typename Poll, typename PollTraits>
-template <typename AF>
-endpoint_t<States, Proto, Poll, PollTraits>::endpoint_t(
-        Poll arg_poll
-        , AF arg_af
-        , typename event_observer_t<Poll*>::on_unhandled_t unhandled) noexcept(std::is_nothrow_move_constructible_v<Poll>)
-    : poll_holder_t<Poll>{std::move(arg_poll)}
-    , event_observer_t<Poll*>{&this->poll, std::move(unhandled)}
-    , af{static_cast<int>(arg_af)}
-    , state{std::nullopt}
-{}
-
-template <template <typename> typename States, typename Proto, typename Poll, typename PollTraits>
-bool endpoint_t<States, Proto, Poll, PollTraits>::idle() const noexcept
-{
-    return this->state.index() == 0;
 }
 
-
-template <template <typename> typename States, typename Proto, typename Poll, typename PollTraits>
-auto endpoint_t<States, Proto, Poll, PollTraits>::get_fd() const noexcept
-{
-    return std::visit(utils::lambda_visitor_t{
-            [](auto const& sock) { return sock.native_handle(); }
-            , [](std::optional<sock::socket_t<Proto>> const& sock)
-            {
-                if (sock)
-                {
-                    return sock->native_handle();
-                }
-                else
-                {
-                    return -1;
-                }
-            }}, state);
-}
-
-}
+#include "../src/endpoint/endpoint.tpp"
 
 #endif //PROTEI_TEST_TASK_ENDPOINT_H

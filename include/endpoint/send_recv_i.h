@@ -7,6 +7,9 @@
 namespace protei::endpoint
 {
 
+/**
+ * @brief Combination of receive and send interfaces
+ */
 class send_recv_i : public send_i, public recv_i
 {};
 

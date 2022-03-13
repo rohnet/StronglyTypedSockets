@@ -1,7 +1,3 @@
-#include <utils/enum_op.h>
-#include "endpoint/event_observer.h"
-
-
 namespace protei::endpoint
 {
 
@@ -24,7 +20,7 @@ bool event_observer_t<Poll, PollTraits>::add(poll_event::event_type event, std::
 
 
 template <typename Poll, typename PollTraits>
-bool event_observer_t<Poll, PollTraits>::remote(poll_event::event_type event)
+bool event_observer_t<Poll, PollTraits>::remove(poll_event::event_type event)
 {
     std::unique_lock lock{m_mutex};
     return m_handlers.erase(event);

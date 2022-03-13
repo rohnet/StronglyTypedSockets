@@ -12,6 +12,10 @@
 namespace protei::endpoint
 {
 
+/**
+ * @brief Poll static adapter
+ * @tparam Poll - poll type
+ */
 template <typename Poll>
 struct poll_traits
 {
