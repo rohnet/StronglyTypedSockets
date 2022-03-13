@@ -3,6 +3,7 @@
 
 #include <poll_event/event.h>
 #include <socket/sock_op.h>
+#include <utils/lambda_visitor.h>
 
 #include <memory>
 #include <vector>

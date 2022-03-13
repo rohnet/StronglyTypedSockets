@@ -26,8 +26,6 @@ void sig(int) noexcept
 }
 
 
-client_i* client = nullptr;
-
 template <typename Client>
 bool init(Client& cl, int port, std::optional<int> local_port) noexcept
 {
@@ -36,19 +34,19 @@ bool init(Client& cl, int port, std::optional<int> local_port) noexcept
             "127.0.0.1"
             , port
             , [](){ }
-            , []()
+            , [&cl]()
             {
                 std::string resp;
                 do
                 {
                     std::string tmp_buff;
                     tmp_buff.resize(20);
-                    auto rec = client->recv(tmp_buff.data(), tmp_buff.size());
+                    auto rec = cl->recv(tmp_buff.data(), tmp_buff.size());
                     if (rec)
                     {
-                        resp += tmp_buff.substr(0, *rec);
+                        resp += tmp_buff.substr(0, rec->second);
                     }
-                } while (!client->finished_recv());
+                } while (!cl->finished_recv());
                 std::cout << "response: " << resp << std::endl;
             }
             , [](){ std::cout << "disconnect" << std::endl; });
@@ -75,6 +73,7 @@ int main(int argc, char* argv[])
     std::string proto = argv[1];
     std::optional<protei::endpoint::client_t<tcp, epoll_t>> client_tcp;
     std::optional<protei::endpoint::client_t<udp, epoll_t>> client_udp;
+    client_i* client = nullptr;
     if (proto == "tcp")
     {
         client_tcp.emplace(epoll_t{5, 10u}, ipv4{});
