@@ -2,12 +2,12 @@
 #include <socket/af_inet.h>
 #include <epoll/epoll.h>
 
+#include "service.h"
+
 #include <iostream>
 #include <thread>
 #include <csignal>
 #include <atomic>
-#include <sstream>
-#include <iterator>
 #include <numeric>
 
 using namespace protei;
@@ -32,56 +32,16 @@ void sig(int) noexcept
 std::vector<std::pair<accepted_sock<tcp>, std::string>> active_sockets;
 
 
-bool is_number(std::string const& s)
-{
-    return !s.empty() && std::find_if(s.begin(), s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
-}
-
-
-std::vector<unsigned> service(std::string const& request)
-{
-    std::stringstream ss(request);
-    std::vector<std::string> int_strs;
-    std::copy_if(std::istream_iterator<std::string>(ss)
-            , std::istream_iterator<std::string>()
-            , std::back_inserter(int_strs)
-            , is_number);
-    std::vector<unsigned> ints;
-    std::transform(
-            int_strs.begin()
-            , int_strs.end()
-            , std::back_inserter(ints)
-            , [](std::string const& str) { return std::stoi(str); });
-    return ints;
-}
-
-
-std::string response(std::string const& req)
-{
-    auto ints = service(req);
-    std::sort(ints.begin(), ints.end());
-    std::stringstream ss;
-    unsigned sum = 0;
-    std::copy_if(
-            ints.begin()
-            , ints.end()
-            , std::ostream_iterator<unsigned>(ss, " ")
-            , [&](unsigned n) { sum += n; return true; });
-    //sum = std::accumulate(ints.begin(), ints.end(), 0u, std::plus<>{});
-    return ss.str() + "\n" + std::to_string(sum);
-}
-
-
-bool init(server_t<udp, epoll_t>& serv, int local_port, int remote_port) noexcept
+bool init(server_t<udp, epoll_t>& serv, service_t& service, int local_port, int remote_port) noexcept
 {
     return serv.start(
             "127.0.0.1"
             , local_port
             , "127.0.0.1"
             , remote_port
-            , [&serv]()
+            , [&serv, &service]()
             {
-                std::optional<std::size_t> rec;
+                std::optional<std::pair<in_address_port_t, std::size_t>> rec;
                 std::string buff;
                 buff.resize(256);
                 std::string str;
@@ -90,10 +50,10 @@ bool init(server_t<udp, epoll_t>& serv, int local_port, int remote_port) noexcep
                     do
                     {
                         rec = serv.recv(buff.data(), buff.size());
-                        if (rec) str += buff.substr(0, *rec);
+                        if (rec) str += buff.substr(0, rec->second);
                     } while (rec);
                 } while (!serv.finished_recv());
-                auto resp = response(str);
+                auto resp = service.create_response(str);
                 serv.send(resp.data(), resp.size());
             }
             , []() { std::cout << "disconnected" << std::endl; });
@@ -122,9 +82,6 @@ bool init(server_t<tcp, epoll_t>& serv, int local_port) noexcept
 }
 
 
-proceed_i* server = nullptr;
-
-
 int main(int argc, char* argv[])
 {
     if (argc < 3) { std::terminate(); }
@@ -137,6 +94,9 @@ int main(int argc, char* argv[])
     std::string proto = argv[1];
     std::optional<protei::endpoint::server_t<tcp, epoll_t>> server_tcp;
     std::optional<protei::endpoint::server_t<udp, epoll_t>> server_udp;
+
+    service_t service;
+    proceed_i* server = nullptr;
     if (proto == "tcp")
     {
         server_tcp.emplace(epoll_t{5, 10u}, ipv4{});
@@ -148,7 +108,7 @@ int main(int argc, char* argv[])
     else if (proto == "udp" && local_port)
     {
         server_udp.emplace(epoll_t{5, 10u}, ipv4{});
-        if (init(*server_udp, local_port, *remote_port))
+        if (init(*server_udp, service, local_port, *remote_port))
         {
             server = &*server_udp;
         }
@@ -170,15 +130,15 @@ int main(int argc, char* argv[])
         {
             std::string tmp_buff;
             tmp_buff.resize(20);
-            std::optional<std::size_t> rec;
+            std::optional<std::pair<in_address_port_t, std::size_t>> rec;
             do
             {
                 rec = it->first.recv(tmp_buff.data(), tmp_buff.size());
-                if (rec) it->second += tmp_buff.substr(0, *rec);
+                if (rec) it->second += tmp_buff.substr(0, rec->second);
             } while (rec);
             if (it->first.finished_recv() && !it->second.empty())
             {
-                auto resp = response(it->second);
+                auto resp = service.create_response(it->second);
                 auto sent = it->first.send(resp.data(), resp.size());
                 if (!sent)
                 {

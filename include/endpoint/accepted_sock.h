@@ -3,6 +3,7 @@
 
 #include <endpoint/send_recv_i.h>
 #include <socket/socket.h>
+#include <utils/mbind.h>
 
 namespace protei::endpoint
 {
@@ -10,8 +11,9 @@ namespace protei::endpoint
 template <typename Proto>
 class accepted_sock : public send_recv_i
 {
+    static_assert(!Proto::is_connectionless);
 public:
-    accepted_sock(std::optional<sock::in_address_port_t> rem, sock::active_socket_t<Proto>&& sock) noexcept
+    accepted_sock(sock::in_address_port_t rem, sock::active_socket_t<Proto>&& sock) noexcept
         : m_sock{std::move(sock)}
         , m_remote{rem}
     {}
@@ -40,33 +42,22 @@ public:
 private:
     std::optional<std::size_t> send_impl(void* buffer, std::size_t n) override
     {
-        if constexpr (Proto::is_connectionless)
-        {
-            return m_sock.send(*m_remote, buffer, n, 0);
-        }
-        else
-        {
-            return m_sock.send(buffer, n, 0);
-        }
+        return m_sock.send(buffer, n, 0);
     }
 
-    std::optional<std::size_t> recv_impl(void* buffer, std::size_t n) override
+    std::optional<std::pair<sock::in_address_port_t, std::size_t>> recv_impl(void* buffer, std::size_t n) override
     {
-        if constexpr (Proto::is_connectionless)
-        {
-            return utils::mbind(
-                    m_sock.receive(buffer, n, 0), [](auto&& pair) -> std::optional<std::size_t>
-                    { return pair.second; });
-        }
-        else
-        {
-            return m_sock.receive(buffer, n, 0);
-        }
+        return utils::mbind(
+                m_sock.receive(buffer, n, 0)
+                , [this](std::size_t recv) -> std::optional<std::pair<sock::in_address_port_t, std::size_t>>
+                {
+                    return {{m_remote, recv}};
+                });
     }
 
     bool finished_send_impl() const override
     {
-        return m_sock.would_block() || m_sock.again();
+        return m_sock.again() || m_sock.would_block();
     }
 
     bool finished_recv_impl() const override
@@ -75,7 +66,7 @@ private:
     }
 
     sock::active_socket_t<Proto> m_sock;
-    std::optional<sock::in_address_port_t> m_remote;
+    sock::in_address_port_t m_remote;
 };
 
 }
