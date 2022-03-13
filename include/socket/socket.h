@@ -13,6 +13,10 @@
 namespace protei::sock
 {
 
+/**
+ * @brief Initial socket state
+ * @tparam Proto - protocol type
+ */
 template <typename Proto>
 class socket_t :
         public policies::connect_policy<socket_t, Proto>,
@@ -23,6 +27,11 @@ class socket_t :
     friend class policies::connect_policy<socket_t, Proto>;
     friend class policies::bind_policy<socket_t, Proto>;
 public:
+    /**
+     * @brief Factory method for noexcept construction.
+     * @param af - address family
+     * @return socket_t instance if construction succeeds
+     */
     static std::optional<socket_t> create(int af) noexcept;
     ~socket_t();
 
@@ -30,7 +39,7 @@ public:
     socket_t& operator=(socket_t&&) noexcept = default;
 
 private:
-    socket_t(impl::socket_impl&&) noexcept;
+    explicit socket_t(impl::socket_impl&&) noexcept;
 
     template <typename T = Proto, std::enable_if_t<has_flags_v<T>, int> = 0>
     static std::optional<socket_t> create(int af) noexcept;

@@ -4,6 +4,9 @@
 namespace protei::poll_event
 {
 
+/**
+ * @brief Poll event types
+ */
 enum class event_type
 {
     NONE = 0,
@@ -15,6 +18,9 @@ enum class event_type
     HANGUP = 1 << 5,
 };
 
+/**
+ * @brief Poll event
+ */
 struct event
 {
     int fd;

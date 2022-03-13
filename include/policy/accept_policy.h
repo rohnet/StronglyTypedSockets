@@ -11,7 +11,12 @@
 namespace protei::sock::policies
 {
 
-template <template <typename> typename D, typename Proto, typename = void >
+/**
+ * @brief Accept policy for connection based protocols
+ * @tparam D - derived type
+ * @tparam Proto - protocol type
+ */
+template <template <typename> typename D, typename Proto, typename = void>
 struct accept_policy
 {
 public:
@@ -35,6 +40,11 @@ private:
 };
 
 
+/**
+ * @brief Accept policy for connectionless protocols
+ * @tparam D - derived type
+ * @tparam Proto - protocol type
+ */
 template <template <typename> typename D, typename Proto>
 struct accept_policy<D, Proto, is_connectionless_t<Proto>>
 {};

@@ -1,4 +1,6 @@
 #include <utils/may_be_unused.h>
+#include "endpoint/client.h"
+
 
 namespace protei::endpoint
 {
@@ -261,4 +263,12 @@ bool client_t<Proto, Poll, PollTraits>::proceed(std::chrono::milliseconds timeou
 {
     return endpoint_t<sum_of_client_states_t, Proto, Poll, PollTraits>::proceed(timeout);
 }
+
+
+template <typename Proto, typename Poll, typename PollTraits>
+client_t<Proto, Poll, PollTraits>::~client_t()
+{
+    unregister_cbs();
+}
+
 }

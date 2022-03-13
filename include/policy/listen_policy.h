@@ -11,6 +11,11 @@
 namespace protei::sock::policies
 {
 
+/**
+ * @brief Listen policy for connection based protocols
+ * @tparam D - derived type
+ * @tparam Proto - protocol type
+ */
 template <template <typename> typename D, typename Proto, typename = void>
 struct listen_policy
 {
@@ -36,6 +41,11 @@ private:
 };
 
 
+/**
+ * @brief Listen policy for connectionless protocols
+ * @tparam D - derived type
+ * @tparam Proto - protocol type
+ */
 template <template <typename> typename D, typename Proto>
 struct listen_policy<D, Proto, is_connectionless_t<Proto>>
 {};

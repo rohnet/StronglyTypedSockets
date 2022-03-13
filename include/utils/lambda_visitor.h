@@ -4,12 +4,19 @@
 namespace protei::utils
 {
 
+/**
+ * @brief Lambda visitor
+ * @tparam Lambdas - lambda types
+ */
 template <typename... Lambdas>
-struct lambda_visitor_t : Lambdas ...
+struct lambda_visitor_t : Lambdas...
 {
     using Lambdas::operator()...;
 };
 
+/**
+ * @brief Deduction guide
+ */
 template <typename... Lambdas>
 lambda_visitor_t(Lambdas...) -> lambda_visitor_t<Lambdas...>;
 

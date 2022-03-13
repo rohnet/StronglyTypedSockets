@@ -11,6 +11,11 @@
 namespace protei::sock::policies
 {
 
+/**
+ * @brief Sending/receiving policy for connection based protocols
+ * @tparam D - derived type
+ * @tparam Proto - protocol type
+ */
 template <template <typename> typename D, typename Proto, typename = void>
 struct send_recv_policy
 {
@@ -40,6 +45,11 @@ private:
 };
 
 
+/**
+ * @brief Sending/receiving policy for connectionless protocols
+ * @tparam D - derived type
+ * @tparam Proto - protocol type
+ */
 template <template <typename> typename D, typename Proto>
 struct send_recv_policy<D, Proto, is_connectionless_t<Proto>>
 {

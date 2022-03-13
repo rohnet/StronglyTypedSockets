@@ -8,21 +8,38 @@
 namespace protei::endpoint
 {
 
+/**
+ * @brief TCP accepted socket, created from listening server socket.
+ * @tparam Proto - protocol type
+ */
 template <typename Proto>
 class accepted_sock : public send_recv_i
 {
     static_assert(!Proto::is_connectionless);
 public:
+    /**
+     * @brief Ctor
+     * @param rem - remote address
+     * @param sock - accepted socket
+     */
     accepted_sock(sock::in_address_port_t rem, sock::active_socket_t<Proto>&& sock) noexcept
         : m_sock{std::move(sock)}
         , m_remote{rem}
     {}
 
+    /**
+     * @brief Move ctor
+     * @param other - instance to be constructed from
+     */
     accepted_sock(accepted_sock&& other) noexcept
         : m_sock{std::move(other.m_sock)}
         , m_remote{std::move(other.m_remote)}
     {}
 
+    /**
+     * @brief Move ctor
+     * @param other - instance to be assigned from
+     */
     accepted_sock& operator=(accepted_sock&& other) noexcept
     {
         if (this != &other)
@@ -33,7 +50,10 @@ public:
         return *this;
     }
 
-
+    /**
+     * @brief Get socket's native handle (file descriptor)
+     * @return file descriptor
+     */
     int native_handle() const noexcept
     {
         return m_sock.native_handle();
