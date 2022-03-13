@@ -31,14 +31,22 @@ std::vector<unsigned> service_t::parse_ints(const std::string& request)
 std::string service_t::create_response(std::string const& req)
 {
     auto ints = parse_ints(req);
-    std::sort(ints.begin(), ints.end());
-    std::stringstream ss;
-    unsigned sum = 0;
-    std::copy_if(
-            ints.begin()
-            , ints.end()
-            , std::ostream_iterator<unsigned>(ss, " ")
-            , [&](unsigned n) { sum += n; return true; });
-    //sum = std::accumulate(ints.begin(), ints.end(), 0u, std::plus<>{});
-    return ss.str() + "\n" + std::to_string(sum);
+    if (ints.empty())
+    {
+        return req;
+    }
+    else
+    {
+        std::sort(ints.begin(), ints.end());
+        std::stringstream ss;
+        unsigned sum = 0;
+        std::copy_if(
+                ints.begin(), ints.end(), std::ostream_iterator<unsigned>(ss, " "), [&](unsigned n)
+                {
+                    sum += n;
+                    return true;
+                });
+        //sum = std::accumulate(ints.begin(), ints.end(), 0u, std::plus<>{});
+        return ss.str() + "\n" + std::to_string(sum);
+    }
 }
