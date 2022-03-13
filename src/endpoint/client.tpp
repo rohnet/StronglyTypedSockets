@@ -1,3 +1,5 @@
+#include <utils/may_be_unused.h>
+
 namespace protei::endpoint
 {
 
@@ -85,6 +87,7 @@ bool client_t<Proto, Poll, PollTraits>::connect(
         }
         return false;
     };
+    MAY_BE_UNUSED(connect);
 
     return std::visit(utils::lambda_visitor_t{
             [&](sock::active_socket_t<Proto>&)

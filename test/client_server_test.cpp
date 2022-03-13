@@ -62,7 +62,7 @@ TEST(client_server, connectTcp)
                             std::string buff;
                             buff.resize(2);
                             auto rec = client.recv(buff.data(), buff.size());
-                            if (rec) { str += buff.substr(0, *rec); }
+                            if (rec) { str += buff.substr(0, rec->second); }
                         } while (!client.finished_recv());
                         ASSERT_EQ(str, "hi");
                     }
@@ -80,7 +80,7 @@ TEST(client_server, connectTcp)
         buff.resize(5, 'a');
         if (auto rec = cap_sock->recv(buff.data(), buff.size()))
         {
-            recv += buff.substr(0, *rec);
+            recv += buff.substr(0, rec->second);
         }
     }
 
@@ -111,7 +111,7 @@ TEST(client_server, exchangeUdp)
                     std::string buff;
                     buff.resize(2);
                     auto rec = server.recv(buff.data(), buff.size());
-                    if (rec) { str += buff.substr(0, *rec); }
+                    if (rec) { str += buff.substr(0, rec->second); }
                 } while (!server.finished_recv());
                 ASSERT_EQ(str, "hi");
             }
@@ -130,7 +130,7 @@ TEST(client_server, exchangeUdp)
                             std::string buff;
                             buff.resize(2);
                             auto rec = client.recv(buff.data(), buff.size());
-                            if (rec) { str += buff.substr(0, *rec); }
+                            if (rec) { str += buff.substr(0, rec->second); }
                         } while (!client.finished_recv());
                         ASSERT_EQ(str, "hi");
                     }

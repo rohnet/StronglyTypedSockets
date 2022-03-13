@@ -3,7 +3,6 @@
 
 #include <endpoint/poll_traits.h>
 #include <endpoint/proceed_exception.h>
-#include <endpoint/proceed_i.h>
 
 #include <map>
 #include <functional>
@@ -13,7 +12,7 @@ namespace protei::endpoint
 {
 
 template <typename Poll, typename PollTraits = poll_traits<Poll>>
-class event_observer_t : public virtual proceed_i
+class event_observer_t
 {
 public:
     using on_unhandled_t = std::function<void(std::vector<poll_event::event>)>;
@@ -26,7 +25,7 @@ public:
 
     bool add(poll_event::event_type event, std::function<void(int fd)> const& func);
     bool remote(poll_event::event_type event);
-    bool proceed(std::chrono::milliseconds timeout) override;
+    bool proceed(std::chrono::milliseconds timeout);
 
 private:
     std::exception_ptr handle_unhandled(std::vector<poll_event::event> const& events);

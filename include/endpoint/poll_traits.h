@@ -21,7 +21,8 @@ struct poll_traits
         return poll.proceed(timeout);
     }
 
-    static bool add_socket(Poll& poll, int sock_fd, sock::sock_op op) noexcept
+    static bool add_socket(Poll& poll, int sock_fd, sock::sock_op op)
+            noexcept(noexcept(poll.add_socket(sock_fd, op)))
     {
         return poll.add_socket(sock_fd, op);
     }
