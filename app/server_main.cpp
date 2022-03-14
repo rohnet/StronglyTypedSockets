@@ -114,13 +114,13 @@ int main(int argc, char* argv[])
     signal(SIGTERM, sig);
     signal(SIGINT, sig);
 
+    std::string tmp_buff;
+    tmp_buff.resize(buff_size);
     while (main_loop)
     {
         if (!server->proceed(std::chrono::milliseconds{10})) std::this_thread::yield();
         for (auto it = active_sockets.begin(); it != active_sockets.end(); )
         {
-            std::string tmp_buff;
-            tmp_buff.resize(buff_size);
             std::optional<std::pair<in_address_port_t, std::size_t>> rec;
             do
             {
