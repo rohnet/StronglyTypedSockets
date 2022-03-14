@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
             {
                 auto resp = service.create_response(it->second);
                 auto sent = it->first.socket->send(resp.data(), resp.size());
-                if (!sent)
+                if (!sent || proto != "tcp")
                 {
                     it = active_sockets.erase(it);
                 }
