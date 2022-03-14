@@ -3,6 +3,7 @@
 #include <epoll/epoll.h>
 
 #include "service.h"
+#include "base_socket.h"
 
 #include <iostream>
 #include <thread>
@@ -28,35 +29,22 @@ void sig(int) noexcept
     main_loop = 0;
 }
 
+std::vector<std::pair<base_socket, std::string>> active_sockets;
 
-std::vector<std::pair<accepted_sock<tcp>, std::string>> active_sockets;
 
-
-bool init(server_t<udp, epoll_t>& serv, service_t& service, int local_port, int remote_port) noexcept
+bool init(server_t<udp, epoll_t>& serv, int local_port) noexcept
 {
     return serv.start(
             "127.0.0.1"
             , local_port
-            , "127.0.0.1"
-            , remote_port
-            , [&serv, &service]()
+            , [](accepted_sock_ref<udp>&& sock)
             {
-                std::optional<std::pair<in_address_port_t, std::size_t>> rec;
-                std::string buff;
-                buff.resize(256);
-                std::string str;
-                do
-                {
-                    do
-                    {
-                        rec = serv.recv(buff.data(), buff.size());
-                        if (rec) str += buff.substr(0, rec->second);
-                    } while (rec);
-                } while (!serv.finished_recv());
-                auto resp = service.create_response(str);
-                serv.send(resp.data(), resp.size());
+                active_sockets.emplace_back(
+                        std::piecewise_construct
+                        , std::forward_as_tuple(std::make_unique<accepted_sock_ref<udp>>(std::move(sock)), -1)
+                        , std::forward_as_tuple(""));
             }
-            , []() { std::cout << "disconnected" << std::endl; });
+            , []() { active_sockets.clear(); });
 }
 
 
@@ -66,9 +54,13 @@ bool init(server_t<tcp, epoll_t>& serv, int local_port) noexcept
             "127.0.0.1"
             , local_port
             , 10
-            , [](accepted_sock<tcp> sock)
+            , [](accepted_sock<tcp>&& sock)
             {
-                active_sockets.emplace_back(std::move(sock), "");
+                int fd = sock.native_handle();
+                active_sockets.emplace_back(
+                        std::piecewise_construct
+                        , std::forward_as_tuple(std::make_unique<accepted_sock<tcp>>(std::move(sock)), fd)
+                        , std::forward_as_tuple(""));
             }
             , [](int fd)
             {
@@ -76,7 +68,7 @@ bool init(server_t<tcp, epoll_t>& serv, int local_port) noexcept
                         std::remove_if(
                                 active_sockets.begin()
                                 , active_sockets.end()
-                                , [fd](auto&& sock) { return sock.first.native_handle() == fd; })
+                                , [fd](auto&& sock) { return sock.first.fd == fd; })
                         , active_sockets.end());
             });
 }
@@ -84,31 +76,30 @@ bool init(server_t<tcp, epoll_t>& serv, int local_port) noexcept
 
 int main(int argc, char* argv[])
 {
-    if (argc < 3) { std::terminate(); }
+    if (argc < 2) { std::terminate(); }
     int local_port = std::stoi(argv[2]);
     std::optional<int> remote_port;
-    if (argc > 3)
-    {
-        remote_port = std::stoi(argv[3]);
-    }
     std::string proto = argv[1];
     std::optional<protei::endpoint::server_t<tcp, epoll_t>> server_tcp;
     std::optional<protei::endpoint::server_t<udp, epoll_t>> server_udp;
 
     service_t service;
     proceed_i* server = nullptr;
+    unsigned buff_size;
     if (proto == "tcp")
     {
+        buff_size = 20;
         server_tcp.emplace(epoll_t{5, 10u}, ipv4{});
         if (init(*server_tcp, local_port))
         {
             server = &*server_tcp;
         }
     }
-    else if (proto == "udp" && local_port)
+    else if (proto == "udp")
     {
+        buff_size = 256;
         server_udp.emplace(epoll_t{5, 10u}, ipv4{});
-        if (init(*server_udp, service, local_port, *remote_port))
+        if (init(*server_udp, local_port))
         {
             server = &*server_udp;
         }
@@ -129,17 +120,17 @@ int main(int argc, char* argv[])
         for (auto it = active_sockets.begin(); it != active_sockets.end(); )
         {
             std::string tmp_buff;
-            tmp_buff.resize(20);
+            tmp_buff.resize(buff_size);
             std::optional<std::pair<in_address_port_t, std::size_t>> rec;
             do
             {
-                rec = it->first.recv(tmp_buff.data(), tmp_buff.size());
+                rec = it->first.socket->recv(tmp_buff.data(), tmp_buff.size());
                 if (rec) it->second += tmp_buff.substr(0, rec->second);
             } while (rec);
-            if (it->first.finished_recv() && !it->second.empty())
+            if (it->first.socket->finished_recv() && !it->second.empty())
             {
                 auto resp = service.create_response(it->second);
-                auto sent = it->first.send(resp.data(), resp.size());
+                auto sent = it->first.socket->send(resp.data(), resp.size());
                 if (!sent)
                 {
                     it = active_sockets.erase(it);

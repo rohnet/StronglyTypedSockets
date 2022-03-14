@@ -2,10 +2,11 @@
 #include <socket/af_inet.h>
 #include <epoll/epoll.h>
 
+#include "async_stdin.h"
+
 #include <iostream>
-#include <thread>
 #include <csignal>
-#include <future>
+#include <thread>
 
 using namespace protei;
 using namespace protei::sock;
@@ -40,7 +41,7 @@ bool init(Client& cl, int port, std::optional<int> local_port) noexcept
                 do
                 {
                     std::string tmp_buff;
-                    tmp_buff.resize(20);
+                    tmp_buff.resize(256);
                     auto rec = cl->recv(tmp_buff.data(), tmp_buff.size());
                     if (rec)
                     {
@@ -50,14 +51,6 @@ bool init(Client& cl, int port, std::optional<int> local_port) noexcept
                 std::cout << "response: " << resp << std::endl;
             }
             , [](){ std::cout << "disconnect" << std::endl; });
-}
-
-
-std::string get_line()
-{
-    std::string line;
-    std::getline(std::cin, line);
-    return line;
 }
 
 
@@ -100,19 +93,21 @@ int main(int argc, char* argv[])
     std::signal(SIGTERM, sig);
     std::signal(SIGINT, sig);
 
-    auto future = std::async(std::launch::async, get_line);
+    async_stdin ai;
     while (main_loop)
     {
         client->proceed(std::chrono::milliseconds{10});
-        if (future.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+        if (auto input = ai.read_line())
         {
-            auto req = future.get();
-            auto sent = client->send(req.data(), req.size());
+            auto sent = client->send(input->data(), input->size());
             if (!sent && !client->finished_send() && !client->finished_recv())
             {
-                std::cerr << "error sending request {" << req << "}" << std::endl;
+                std::cerr << "error sending request {" << *input << "}" << std::endl;
             }
-            future = std::async(std::launch::async, get_line);
+        }
+        else
+        {
+            std::this_thread::yield();
         }
     }
 

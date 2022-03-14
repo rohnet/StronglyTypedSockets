@@ -72,7 +72,7 @@ struct poll_traits<my_poll_t>
 
 ## Running client and server
 client: ```./client tcp [remote_port]``` or ```./client udp [remote_port] [local_port]```
-server: ```./server tcp [local_port]``` or ```./server udp [local_port] [remote_port]```
+server: ```./server [tcp|udp] [local_port]```
 
 ## Unit-test results
 TODO: add travis CI to repo

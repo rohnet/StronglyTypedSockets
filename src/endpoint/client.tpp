@@ -224,9 +224,9 @@ client_t<Proto, Poll, PollTraits>::recv_impl(void* buffer, std::size_t n)
         {
             return utils::mbind(sock->receive(buffer, n, 0)
                     , [this](std::size_t recv) -> std::optional<std::pair<sock::in_address_port_t, std::size_t>>
-                                {
-                                    return std::pair{ *m_remote, recv };
-                                });
+                    {
+                        return std::pair{ *m_remote, recv };
+                    });
         }
     }
     else
