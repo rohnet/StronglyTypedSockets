@@ -108,7 +108,7 @@ std::optional<std::pair<in_address_port_t, std::size_t>> socket_impl::recv_from_
     std::optional<std::pair<in_address_port_t, std::size_t>> ret;
 
     Addr addr{};
-    unsigned addr_size{};
+    unsigned addr_size = sizeof(addr);
     auto received = ::recvfrom(*m_fd, buffer, n, flags, reinterpret_cast<sockaddr*>(&addr), &addr_size);
     if (received != -1)
     {

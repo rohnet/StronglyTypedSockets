@@ -3,6 +3,7 @@
 
 #include <endpoint/endpoint.h>
 #include <endpoint/accepted_sock.h>
+#include <endpoint/accepted_sock_ref.h>
 #include <utils/mbind.h>
 #include <endpoint/proceed_i.h>
 #include <utils/address_from_string.h>
@@ -33,39 +34,29 @@ struct interface_proxy
             std::string const& address
             , std::uint_fast16_t port
             , unsigned max_conns
-            , std::function<void(accepted_sock<Proto>)> on_conn
+            , std::function<void(accepted_sock<Proto>&&)> on_conn
             , std::function<void(int fd)> erase_active_socket) noexcept;
 };
 
 
 template <typename Proto, typename D, typename PollTraits>
-struct interface_proxy<Proto, D, PollTraits, sock::is_connectionless_t<Proto>> : send_recv_i
+struct interface_proxy<Proto, D, PollTraits, sock::is_connectionless_t<Proto>>
 {
     /**
      * @brief Start server. Creates binded socket internally
      * @param address - local address to bind to socket
      * @param port - local port to bind to socket
-     * @param remote_address - remote address
-     * @param remote_port - remote port
-     * @param on_conn - callback to be called on incoming messages
-     * @param on_close - callback to be called on termination events
+     * @param on_conn - callback to be called on incoming messages. Must not use provided sockets after server_t
+     * destruction.
+     * @param on_close - callback to be called on termination events. After that must not use any of accepted sockets,
+     * that were received in on_conn callback.
      * @return true for success
      */
     bool start(
             std::string const& address
             , std::uint_fast16_t port
-            , std::string const& remote_address
-            , std::uint_fast16_t remote_port
-            , std::function<void()> on_read_ready
+            , std::function<void(accepted_sock_ref<Proto>&&)> on_conn
             , std::function<void()> on_close);
-
-private:
-    std::optional<std::size_t> send_impl(void* buffer, std::size_t n) override;
-    std::optional<std::pair<sock::in_address_port_t, std::size_t>> recv_impl(void* buffer, std::size_t n) override;
-    bool finished_recv_impl() const override;
-    bool finished_send_impl() const override;
-
-    std::optional<sock::in_address_port_t> m_remote;
 };
 
 
@@ -97,9 +88,8 @@ private:
     void register_cbs();
     void unregister_cbs();
 
-    std::function<void(accepted_sock<Proto>)> m_on_conn;
+    std::function<void(send_recv_i&&)> m_on_conn;
     std::function<void(int fd)> m_erase_active_socket;
-    std::function<void()> m_on_read_ready;
     mutable std::mutex m_mutex;
 };
 

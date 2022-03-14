@@ -6,7 +6,7 @@ bool interface_proxy<Proto, D, PollTraits, V>::start(
         std::string const& address
         , std::uint_fast16_t port
         , unsigned int max_conns
-        , std::function<void(accepted_sock<Proto>)> on_conn
+        , std::function<void(accepted_sock<Proto>&&)> on_conn
         , std::function<void(int)> erase_active_socket) noexcept
 {
     using utils::mbind;
@@ -28,7 +28,11 @@ bool interface_proxy<Proto, D, PollTraits, V>::start(
             derived.register_cbs();
             PollTraits::add_socket(derived.poll, listener->native_handle(), sock::sock_op::READ);
             derived.state = std::move(*listener);
-            derived.m_on_conn = std::move(on_conn);
+            // Type erasure
+            derived.m_on_conn = [on_conn = std::move(on_conn)](send_recv_i&& sock)
+            {
+                on_conn(static_cast<accepted_sock<Proto>&&>(sock));
+            };
             derived.m_erase_active_socket = std::move(erase_active_socket);
             return true;
         }
@@ -42,18 +46,15 @@ template <typename Proto, typename D, typename PollTraits>
 bool interface_proxy<Proto, D, PollTraits, sock::is_connectionless_t<Proto>>::start(
         std::string const& address
         , std::uint_fast16_t port
-        , std::string const& remote_address
-        , std::uint_fast16_t remote_port
-        , std::function<void()> on_read_ready
+        , std::function<void(accepted_sock_ref<Proto>&&)> on_conn
         , std::function<void()> on_close)
 {
     using utils::mbind;
     auto& derived = static_cast<D&>(*this);
     std::lock_guard lock{derived.m_mutex};
-    std::optional<sock::in_address_port_t> local_addr, remote_addr;
+    std::optional<sock::in_address_port_t> local_addr;
     if (derived.idle()
-        && (local_addr = utils::from_string_and_port(address, port))
-        && (remote_addr = utils::from_string_and_port(remote_address, remote_port)))
+        && (local_addr = utils::from_string_and_port(address, port)))
     {
         auto active = mbind(sock::socket_t<Proto>::create(derived.af)
                 , [&](sock::socket_t<Proto>&& sock)
@@ -65,9 +66,12 @@ bool interface_proxy<Proto, D, PollTraits, sock::is_connectionless_t<Proto>>::st
             derived.register_cbs();
             PollTraits::add_socket(derived.poll, active->native_handle(), sock::sock_op::READ);
             derived.state = std::move(*active);
-            derived.m_on_read_ready = std::move(on_read_ready);
+            // Type erasure
+            derived.m_on_conn = [on_conn = std::move(on_conn)](send_recv_i&& sock)
+            {
+                on_conn(static_cast<accepted_sock_ref<Proto>&&>(sock));
+            };
             derived.m_erase_active_socket = [on_close = std::move(on_close)](int) { on_close(); };
-            derived.m_remote = *remote_addr;
             return true;
         }
     }
@@ -75,72 +79,12 @@ bool interface_proxy<Proto, D, PollTraits, sock::is_connectionless_t<Proto>>::st
     return false;
 }
 
-template <typename Proto, typename D, typename PollTraits>
-bool interface_proxy<Proto, D, PollTraits, sock::is_connectionless_t<Proto>>::finished_send_impl() const
-{
-    auto* sock = std::get_if<sock::active_socket_t<Proto>>(&static_cast<D const&>(*this).state);
-    if (sock)
-    {
-        return sock->would_block() || sock->again();
-    }
-    else
-    {
-        return true;
-    }
-}
-
-
-template <typename Proto, typename D, typename PollTraits>
-bool interface_proxy<Proto, D, PollTraits, sock::is_connectionless_t<Proto>>::finished_recv_impl() const
-{
-    auto* sock = std::get_if<sock::active_socket_t<Proto>>(&static_cast<D const&>(*this).state);
-    if (sock)
-    {
-        return sock->would_block() || sock->again();
-    }
-    else
-    {
-        return true;
-    }
-}
-
-
-template <typename Proto, typename D, typename PollTraits>
-std::optional<std::pair<sock::in_address_port_t, std::size_t>>
-interface_proxy<Proto, D, PollTraits, sock::is_connectionless_t<Proto>>::recv_impl(void* buffer, std::size_t n)
-{
-    auto* sock = std::get_if<sock::active_socket_t<Proto>>(&static_cast<D&>(*this).state);
-    if (sock)
-    {
-        return sock->receive(buffer, n, 0);
-    }
-    else
-    {
-        return std::nullopt;
-    }
-}
-
-
-template <typename Proto, typename D, typename PollTraits>
-std::optional<std::size_t> interface_proxy<Proto, D, PollTraits, sock::is_connectionless_t<Proto>>::send_impl(
-        void* buffer, std::size_t n)
-{
-    auto* sock = std::get_if<sock::active_socket_t<Proto>>(&static_cast<D&>(*this).state);
-    if (sock && m_remote)
-    {
-        return sock->send(*m_remote, buffer, n, 0);
-    }
-    else
-    {
-        return std::nullopt;
-    }
-}
-
 
 template <typename Proto, typename Poll, typename PollTraits>
 void server_t<Proto, Poll, PollTraits>::stop() noexcept
 {
     std::lock_guard lock{m_mutex};
+    m_erase_active_socket(this->get_fd());
     this->state = sock::socket_t<Proto>{this->af};
     PollTraits::del_socket(this->poll, this->get_fd());
     unregister_cbs();
@@ -169,7 +113,7 @@ void server_t<Proto, Poll, PollTraits>::register_cbs()
         {
             if constexpr (Proto::is_connectionless)
             {
-                this->m_on_read_ready();
+                this->m_on_conn(accepted_sock_ref<Proto>{this->state});
             }
             else
             {
@@ -208,6 +152,10 @@ bool server_t<Proto, Poll, PollTraits>::proceed(std::chrono::milliseconds timeou
 template <typename Proto, typename Poll, typename PollTraits>
 server_t<Proto, Poll, PollTraits>::~server_t()
 {
+    if (m_erase_active_socket)
+    {
+        this->m_erase_active_socket(-1);
+    }
     unregister_cbs();
 }
 
