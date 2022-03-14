@@ -41,7 +41,7 @@ bool init(server_t<udp, epoll_t>& serv, int local_port) noexcept
             {
                 active_sockets.emplace_back(
                         std::piecewise_construct
-                        , std::forward_as_tuple(std::make_unique<accepted_sock_ref<udp>>(std::move(sock)), -1)
+                        , std::forward_as_tuple(std::move(sock), -1)
                         , std::forward_as_tuple(""));
             }
             , []() { active_sockets.clear(); });
@@ -59,7 +59,7 @@ bool init(server_t<tcp, epoll_t>& serv, int local_port) noexcept
                 int fd = sock.native_handle();
                 active_sockets.emplace_back(
                         std::piecewise_construct
-                        , std::forward_as_tuple(std::make_unique<accepted_sock<tcp>>(std::move(sock)), fd)
+                        , std::forward_as_tuple(std::move(sock), fd)
                         , std::forward_as_tuple(""));
             }
             , [](int fd)
